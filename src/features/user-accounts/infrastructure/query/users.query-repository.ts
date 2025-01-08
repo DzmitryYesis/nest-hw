@@ -64,6 +64,7 @@ export class UsersQueryRepository {
   async getUserById(id: ObjectId): Promise<UserViewDto> {
     const user = await this.UserModel.findOne({
       _id: id,
+      userStatus: { $ne: UserStatusEnum.DELETED },
     });
 
     //TODO fix logic for error. Add logic to modal

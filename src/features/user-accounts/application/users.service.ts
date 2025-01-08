@@ -10,8 +10,8 @@ import { InjectModel } from '@nestjs/mongoose';
 export class UsersService {
   constructor(
     @InjectModel(User.name)
-    protected UserModel: UserModelType,
-    protected usersRepository: UsersRepository,
+    private UserModel: UserModelType,
+    private usersRepository: UsersRepository,
   ) {}
 
   async createUser(dto: UserInputDto): Promise<ObjectId> {

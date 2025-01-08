@@ -1,2 +1,2 @@
-export * from './userStatus';
+export * from './entitiesStatus';
 export * from './querySortBy';

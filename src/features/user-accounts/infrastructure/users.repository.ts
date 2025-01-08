@@ -8,7 +8,7 @@ import { UserStatusEnum } from '../../../constants';
 export class UsersRepository {
   constructor(
     @InjectModel(User.name)
-    protected UserModel: UserModelType,
+    private UserModel: UserModelType,
   ) {}
 
   async findUserById(id: string): Promise<UserDocument | null> {
