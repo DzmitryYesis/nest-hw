@@ -6,17 +6,12 @@ import {
 } from './email-confirmation.schema';
 import { CreateUserDomainDto } from '../dto';
 import { HydratedDocument, Model } from 'mongoose';
-import { ObjectId } from 'mongodb';
 import { v4 as uuidV4 } from 'uuid';
 import { add } from 'date-fns';
-
-//TODO create folder for global classes or config classes
-export class BaseEntity {
-  _id: ObjectId;
-}
+import { UserStatusEnum } from '../../../constants';
 
 @Schema({ timestamps: true })
-export class User extends BaseEntity {
+export class User {
   @Prop({ type: AccountDataSchema })
   accountData: AccountData;
 
@@ -25,6 +20,15 @@ export class User extends BaseEntity {
 
   @Prop({ type: Date })
   createdAt: Date;
+
+  @Prop({ type: Date })
+  updatedAt: Date;
+
+  @Prop({ enum: UserStatusEnum, default: UserStatusEnum.ACTIVE })
+  userStatus: UserStatusEnum;
+
+  @Prop({ type: Date, nullable: true, default: null })
+  deletedAt: Date | null;
 
   static createInstance(dto: CreateUserDomainDto): UserDocument {
     const user = new this();
@@ -48,8 +52,9 @@ export class User extends BaseEntity {
     return user as UserDocument;
   }
 
-  getId(): ObjectId {
-    return this._id;
+  deleteUser() {
+    this.userStatus = UserStatusEnum.DELETED;
+    this.deletedAt = new Date();
   }
 }
 
