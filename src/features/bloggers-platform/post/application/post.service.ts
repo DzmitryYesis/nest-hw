@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../domain';
 import { PostRepository } from '../infrastructure';
@@ -12,6 +12,7 @@ export class PostService {
     @InjectModel(Post.name)
     private PostModel: PostModelType,
     private postRepository: PostRepository,
+    @Inject(forwardRef(() => BlogRepository))
     private blogRepository: BlogRepository,
   ) {}
 

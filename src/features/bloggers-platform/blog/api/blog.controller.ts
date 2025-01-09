@@ -20,7 +20,7 @@ import {
   PostForBlogInputDto,
 } from '../dto';
 import { ObjectId } from 'mongodb';
-import { PostQueryRepository, PostViewDto } from '../../post';
+import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
 
 @Controller('blogs')
 export class BlogController {
@@ -42,6 +42,16 @@ export class BlogController {
   @Get(':id')
   async getBlogById(@Param('id') id: string): Promise<BlogViewDto> {
     return this.blogQueryRepository.getBlogById(new ObjectId(id));
+  }
+
+  @Get(':id/posts')
+  async getPostsForBlog(
+    @Param('id') id: string,
+    @Query() query: PostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    const queryParams = new PostsQueryParams(query);
+
+    return this.postQueryRepository.getPostsForBlog(id, queryParams);
   }
 
   @Post()

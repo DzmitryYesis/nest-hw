@@ -53,4 +53,33 @@ export class PostQueryRepository {
 
     return PostViewDto.mapToView(post);
   }
+
+  async getPostsForBlog(
+    id: string,
+    query: PostsQueryParams,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    const filter = {
+      blogId: id,
+      postsStatus: { $ne: PostStatusEnum.DELETED },
+    };
+
+    const posts = await this.PostModel.find(filter)
+      .sort({
+        [query.sortBy]: query.sortDirection,
+      })
+      .skip((query.pageNumber - 1) * query.pageSize)
+      .limit(query.pageSize)
+      .lean();
+
+    const totalCount = await this.PostModel.countDocuments(filter);
+
+    const items = posts.map((post) => PostViewDto.mapToView(post));
+
+    return PaginatedViewDto.mapToView({
+      items,
+      totalCount,
+      page: query.pageNumber,
+      size: query.pageSize,
+    });
+  }
 }
