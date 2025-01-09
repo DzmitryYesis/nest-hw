@@ -1,4 +1,9 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Blog, BlogModelType } from '../domain';
 import { BlogRepository } from '../infrastructure';
@@ -18,6 +23,16 @@ export class BlogService {
     private postRepository: PostRepository,
   ) {}
 
+  async getBlogById(id: string): Promise<string | null> {
+    const blog = await this.blogRepository.findBlogById(id);
+
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${id} not found`);
+    }
+
+    return blog._id.toString();
+  }
+
   async createBlog(dto: BlogInputDto): Promise<ObjectId> {
     const blog = this.BlogModel.createInstance({
       name: dto.name,
@@ -36,38 +51,44 @@ export class BlogService {
   ): Promise<ObjectId | void> {
     const blog = await this.blogRepository.findBlogById(id);
 
-    if (blog) {
-      const post = this.PostModel.createInstance({
-        title: dto.title,
-        content: dto.content,
-        shortDescription: dto.shortDescription,
-        blogId: id,
-        blogName: blog.name,
-      });
-
-      await this.postRepository.save(post);
-
-      return post._id;
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${id} not found`);
     }
+
+    const post = this.PostModel.createInstance({
+      title: dto.title,
+      content: dto.content,
+      shortDescription: dto.shortDescription,
+      blogId: id,
+      blogName: blog.name,
+    });
+
+    await this.postRepository.save(post);
+
+    return post._id;
   }
 
   async updateBlog(id: string, dto: BlogInputDto): Promise<void> {
     const blog = await this.blogRepository.findBlogById(id);
 
-    if (blog) {
-      blog.updateBlog(dto);
-
-      await this.blogRepository.save(blog);
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${id} not found`);
     }
+
+    blog.updateBlog(dto);
+
+    await this.blogRepository.save(blog);
   }
 
   async deleteBlogById(id: string): Promise<void> {
     const blog = await this.blogRepository.findBlogById(id);
 
-    if (blog) {
-      blog.deleteBlog();
-
-      await this.blogRepository.save(blog);
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${id} not found`);
     }
+
+    blog.deleteBlog();
+
+    await this.blogRepository.save(blog);
   }
 }

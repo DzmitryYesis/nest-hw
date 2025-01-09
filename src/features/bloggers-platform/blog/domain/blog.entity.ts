@@ -14,7 +14,7 @@ export class Blog {
   @Prop({ required: true, type: String })
   websiteUrl: string;
 
-  @Prop({ required: true, type: Boolean, default: true })
+  @Prop({ required: true, type: Boolean, default: false })
   isMembership: boolean;
 
   @Prop({ type: Date })

@@ -1,4 +1,9 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../domain';
 import { PostRepository } from '../infrastructure';
@@ -16,42 +21,51 @@ export class PostService {
     private blogRepository: BlogRepository,
   ) {}
 
-  //TODO fix problem with undefined for post
   async createPost(dto: PostInputDto): Promise<ObjectId | void> {
     const blog = await this.blogRepository.findBlogById(dto.blogId);
 
-    if (blog) {
-      const post = this.PostModel.createInstance({
-        title: dto.title,
-        content: dto.content,
-        shortDescription: dto.shortDescription,
-        blogId: dto.blogId,
-        blogName: blog.name,
-      });
-
-      await this.postRepository.save(post);
-
-      return post._id;
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${dto.blogId} not found`);
     }
+
+    const post = this.PostModel.createInstance({
+      title: dto.title,
+      content: dto.content,
+      shortDescription: dto.shortDescription,
+      blogId: dto.blogId,
+      blogName: blog.name,
+    });
+
+    await this.postRepository.save(post);
+
+    return post._id;
   }
 
   async updatePost(id: string, dto: PostInputDto): Promise<void> {
     const post = await this.postRepository.findPostById(id);
     const blog = await this.blogRepository.findBlogById(dto.blogId);
-    if (post && blog) {
-      post.updatePost({ ...dto, blogName: blog.name });
 
-      await this.postRepository.save(post);
+    if (!blog) {
+      throw new NotFoundException(`Blog with id ${dto.blogId} not found`);
     }
+    if (!post) {
+      throw new NotFoundException(`Post with id ${id} not found`);
+    }
+
+    post.updatePost({ ...dto, blogName: blog.name });
+
+    await this.postRepository.save(post);
   }
 
   async deletePostById(id: string): Promise<void> {
     const post = await this.postRepository.findPostById(id);
 
-    if (post) {
-      post.deletePost();
-
-      await this.postRepository.save(post);
+    if (!post) {
+      throw new NotFoundException(`Post with id ${id} not found`);
     }
+
+    post.deletePost();
+
+    await this.postRepository.save(post);
   }
 }

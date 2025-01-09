@@ -50,7 +50,6 @@ export class BlogQueryRepository {
       blogStatus: { $ne: BlogStatusEnum.DELETED },
     });
 
-    //TODO fix logic for error. Add logic to modal
     if (!blog) {
       throw new NotFoundException(`Blog with id ${id} not found`);
     }

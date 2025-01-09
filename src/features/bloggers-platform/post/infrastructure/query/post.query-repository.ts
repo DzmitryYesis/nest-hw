@@ -46,7 +46,6 @@ export class PostQueryRepository {
       postStatus: { $ne: PostStatusEnum.DELETED },
     });
 
-    //TODO fix logic for error. Add logic to modal
     if (!post) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }

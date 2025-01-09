@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../infrastructure';
 import { UserInputDto } from '../dto';
 import bcrypt from 'bcrypt';
@@ -35,10 +35,12 @@ export class UsersService {
   async deleteUserById(id: string): Promise<void> {
     const user = await this.usersRepository.findUserById(id);
 
-    if (user) {
-      user.deleteUser();
-
-      await this.usersRepository.save(user);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
     }
+
+    user.deleteUser();
+
+    await this.usersRepository.save(user);
   }
 }

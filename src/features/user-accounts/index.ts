@@ -1,6 +1,6 @@
-export * from './user-accounts.module';
-export * from './api';
-export * from './application';
+export { UserAccountsModule } from './user-accounts.module';
+export { UsersController } from './api';
+export { UsersService } from './application';
 export * from './domain';
 export * from './dto';
-export * from './infrastructure';
+export { UsersQueryRepository, UsersRepository } from './infrastructure';

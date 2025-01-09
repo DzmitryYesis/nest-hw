@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AccountData, AccountDataSchema } from './account-data.schema';
 import {
   EmailConfirmation,
   EmailConfirmationSchema,
@@ -12,8 +11,17 @@ import { UserStatusEnum } from '../../../constants';
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ type: AccountDataSchema })
-  accountData: AccountData;
+  @Prop({ required: true, type: String })
+  login: string;
+
+  @Prop({ required: true, type: String })
+  email: string;
+
+  @Prop({ required: true, type: String })
+  passwordHash: string;
+
+  @Prop({ required: true, type: String })
+  salt: string;
 
   @Prop({ type: EmailConfirmationSchema })
   emailConfirmation: EmailConfirmation;
@@ -33,12 +41,10 @@ export class User {
   static createInstance(dto: CreateUserDomainDto): UserDocument {
     const user = new this();
 
-    user.accountData = {
-      email: dto.email,
-      login: dto.login,
-      salt: dto.salt,
-      passwordHash: dto.passwordHash,
-    } as AccountData;
+    user.login = dto.login;
+    user.email = dto.email;
+    user.passwordHash = dto.passwordHash;
+    user.salt = dto.salt;
 
     user.emailConfirmation = {
       confirmationCode: uuidV4(),

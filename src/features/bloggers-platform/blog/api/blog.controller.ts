@@ -50,8 +50,9 @@ export class BlogController {
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
+    const blogId = await this.blogService.getBlogById(id);
 
-    return this.postQueryRepository.getPostsForBlog(id, queryParams);
+    return this.postQueryRepository.getPostsForBlog(blogId!, queryParams);
   }
 
   @Post()

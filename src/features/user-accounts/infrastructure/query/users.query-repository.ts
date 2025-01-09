@@ -23,7 +23,7 @@ export class UsersQueryRepository {
     if (query.searchEmailTerm) {
       filter['$or'] = [
         {
-          'accountData.email': {
+          email: {
             $regex: query.searchEmailTerm,
             $options: 'i',
           },
@@ -34,7 +34,7 @@ export class UsersQueryRepository {
     if (query.searchLoginTerm) {
       filter['$or'] = filter['$or'] || [];
       filter['$or'].push({
-        'accountData.login': {
+        login: {
           $regex: query.searchLoginTerm,
           $options: 'i',
         },

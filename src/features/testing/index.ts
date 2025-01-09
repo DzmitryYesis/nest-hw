@@ -1,2 +1,2 @@
-export * from './tetsing.module';
-export * from './testing.controller';
+export { TestingModule } from './tetsing.module';
+export { TestingController } from './testing.controller';
