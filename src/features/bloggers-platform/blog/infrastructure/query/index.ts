@@ -1,1 +1,1 @@
-export * from './blog.query-repository';
+export { BlogQueryRepository } from './blog.query-repository';

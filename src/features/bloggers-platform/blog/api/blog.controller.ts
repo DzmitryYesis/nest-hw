@@ -13,14 +13,21 @@ import {
 import { BlogService } from '../application';
 import { BlogQueryRepository } from '../infrastructure';
 import { PaginatedViewDto } from '../../../../core/dto';
-import { BlogInputDto, BlogsQueryParams, BlogViewDto } from '../dto';
+import {
+  BlogInputDto,
+  BlogsQueryParams,
+  BlogViewDto,
+  PostForBlogInputDto,
+} from '../dto';
 import { ObjectId } from 'mongodb';
+import { PostQueryRepository, PostViewDto } from '../../post';
 
 @Controller('blogs')
 export class BlogController {
   constructor(
     private blogService: BlogService,
     private blogQueryRepository: BlogQueryRepository,
+    private postQueryRepository: PostQueryRepository,
   ) {}
 
   @Get()
@@ -42,6 +49,16 @@ export class BlogController {
     const blogId = await this.blogService.createBlog(data);
 
     return this.blogQueryRepository.getBlogById(blogId);
+  }
+
+  @Post(':id/posts')
+  async createPostForBlog(
+    @Param('id') id: string,
+    @Body() data: PostForBlogInputDto,
+  ): Promise<PostViewDto> {
+    const postId = await this.blogService.createPostForBlog(id, data);
+
+    return this.postQueryRepository.getPostById(postId!);
   }
 
   @Put(':id')

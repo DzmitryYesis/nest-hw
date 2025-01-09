@@ -18,7 +18,7 @@ export class BlogRepository {
     });
   }
 
-  async save(user: BlogDocument) {
-    await user.save();
+  async save(blog: BlogDocument) {
+    await blog.save();
   }
 }

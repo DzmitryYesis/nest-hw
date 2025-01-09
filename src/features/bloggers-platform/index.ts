@@ -1,2 +1,37 @@
 export * from './bloggers-platform.module';
-export * from './blog';
+export {
+  BlogRepository,
+  BlogQueryRepository,
+  BlogController,
+  BlogService,
+  PostForBlogInputDto,
+  BlogViewDto,
+  BlogInputDto,
+  CreateBlogDomainDto,
+  BlogsQueryParams,
+  Blog,
+  BlogSchema,
+  BlogDocument,
+  BlogModelType,
+} from './blog';
+export {
+  PostRepository,
+  PostQueryRepository,
+  PostController,
+  PostService,
+  PostViewDto,
+  PostsQueryParams,
+  PostInputDto,
+  CreatePostDomainDto,
+  UpdatePostDomainDto,
+  NewestLikeViewDto,
+  ExtendedLikesInfoViewDto,
+  ExtendedLikesInfo,
+  ExtendedLikesInfoSchema,
+  LikesDislikesDBData,
+  LikesDislikesDBDataSchema,
+  Post,
+  PostSchema,
+  PostDocument,
+  PostModelType,
+} from './post';

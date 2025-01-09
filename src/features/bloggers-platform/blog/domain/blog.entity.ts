@@ -39,7 +39,7 @@ export class Blog {
     return blog as BlogDocument;
   }
 
-  update(dto: BlogInputDto): void {
+  updateBlog(dto: BlogInputDto): void {
     this.name = dto.name;
     this.description = dto.description;
     this.websiteUrl = dto.websiteUrl;

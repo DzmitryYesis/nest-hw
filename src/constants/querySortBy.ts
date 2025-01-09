@@ -11,6 +11,15 @@ export enum BlogsSortBy {
   CREATED_AT = 'createdAt',
 }
 
+export enum PostsSortBy {
+  TITLE = 'title',
+  SHORT_DESCRIPTION = 'shortDescription',
+  CONTENT = 'content',
+  BLOG_ID = 'blogId',
+  BLOG_NAME = 'blogName',
+  CREATED_AT = 'createdAt',
+}
+
 export enum SortDirection {
   ASC = 'asc',
   DESC = 'desc',

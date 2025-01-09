@@ -2,15 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Blog, BlogModelType } from '../domain';
 import { BlogRepository } from '../infrastructure';
-import { BlogInputDto } from '../dto';
+import { BlogInputDto, PostForBlogInputDto } from '../dto';
 import { ObjectId } from 'mongodb';
+import { Post, PostModelType, PostRepository } from '../../post';
 
 @Injectable()
 export class BlogService {
   constructor(
     @InjectModel(Blog.name)
     private BlogModel: BlogModelType,
+    @InjectModel(Post.name)
+    private PostModel: PostModelType,
     private blogRepository: BlogRepository,
+    private postRepository: PostRepository,
   ) {}
 
   async createBlog(dto: BlogInputDto): Promise<ObjectId> {
@@ -25,11 +29,32 @@ export class BlogService {
     return blog._id;
   }
 
+  async createPostForBlog(
+    id: string,
+    dto: PostForBlogInputDto,
+  ): Promise<ObjectId | void> {
+    const blog = await this.blogRepository.findBlogById(id);
+
+    if (blog) {
+      const post = this.PostModel.createInstance({
+        title: dto.title,
+        content: dto.content,
+        shortDescription: dto.shortDescription,
+        blogId: id,
+        blogName: blog.name,
+      });
+
+      await this.postRepository.save(post);
+
+      return post._id;
+    }
+  }
+
   async updateBlog(id: string, dto: BlogInputDto): Promise<void> {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (blog) {
-      blog.update(dto);
+      blog.updateBlog(dto);
 
       await this.blogRepository.save(blog);
     }

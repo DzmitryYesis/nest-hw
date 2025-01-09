@@ -1,2 +1,2 @@
-export * from './blog.repository';
-export * from './query';
+export { BlogRepository } from './blog.repository';
+export { BlogQueryRepository } from './query';
