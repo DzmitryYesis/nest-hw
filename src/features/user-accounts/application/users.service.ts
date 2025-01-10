@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../infrastructure';
 import { UserInputDto } from '../dto';
 import bcrypt from 'bcrypt';
@@ -10,8 +10,8 @@ import { InjectModel } from '@nestjs/mongoose';
 export class UsersService {
   constructor(
     @InjectModel(User.name)
-    protected UserModel: UserModelType,
-    protected usersRepository: UsersRepository,
+    private UserModel: UserModelType,
+    private usersRepository: UsersRepository,
   ) {}
 
   async createUser(dto: UserInputDto): Promise<ObjectId> {
@@ -30,5 +30,17 @@ export class UsersService {
     await this.usersRepository.save(user);
 
     return user._id;
+  }
+
+  async deleteUserById(id: string): Promise<void> {
+    const user = await this.usersRepository.findUserById(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    user.deleteUser();
+
+    await this.usersRepository.save(user);
   }
 }

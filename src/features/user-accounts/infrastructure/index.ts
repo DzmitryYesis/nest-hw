@@ -1,2 +1,2 @@
-export * from './query';
-export * from './users.repository';
+export { UsersQueryRepository } from './query';
+export { UsersRepository } from './users.repository';
