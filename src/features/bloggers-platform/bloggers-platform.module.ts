@@ -16,13 +16,22 @@ import {
   PostSchema,
   PostService,
 } from './post';
+import {
+  CommentSchema,
+  Comment,
+  CommentController,
+  CommentService,
+  CommentRepository,
+  CommentQueryRepository,
+} from './comment';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
     MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
+    MongooseModule.forFeature([{ name: Comment.name, schema: CommentSchema }]),
   ],
-  controllers: [BlogController, PostController],
+  controllers: [BlogController, PostController, CommentController],
   providers: [
     BlogService,
     BlogRepository,
@@ -30,6 +39,9 @@ import {
     PostService,
     PostRepository,
     PostQueryRepository,
+    CommentService,
+    CommentRepository,
+    CommentQueryRepository,
   ],
   exports: [MongooseModule],
 })

@@ -1,4 +1,4 @@
-import { BaseQueryParams } from '../../../../../core/dto';
+import { BaseQueryParams } from '../../../../../core';
 import { PostsSortBy } from '../../../../../constants';
 
 export class PostsQueryParams extends BaseQueryParams<PostsSortBy> {

@@ -20,6 +20,11 @@ export enum PostsSortBy {
   CREATED_AT = 'createdAt',
 }
 
+export enum CommentsSortBy {
+  CONTENT = 'content',
+  CREATED_AT = 'createdAt',
+}
+
 export enum SortDirection {
   ASC = 'asc',
   DESC = 'desc',

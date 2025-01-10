@@ -3,9 +3,9 @@ import { PostStatusEnum } from '../../../../constants';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreatePostDomainDto, UpdatePostDomainDto } from '../dto';
 import {
-  ExtendedLikesInfo,
-  ExtendedLikesInfoSchema,
-} from './extended-likes-info.schema';
+  BaseExtendedLikesInfoSchema,
+  BaseLikesDislikesInfo,
+} from '../../../../core/domain';
 
 @Schema({ timestamps: true })
 export class Post {
@@ -36,8 +36,8 @@ export class Post {
   @Prop({ type: Date, nullable: true, default: null })
   deletedAt: Date | null;
 
-  @Prop({ type: ExtendedLikesInfoSchema })
-  extendedLikesInfo: ExtendedLikesInfo;
+  @Prop({ type: BaseExtendedLikesInfoSchema })
+  extendedLikesInfo: BaseLikesDislikesInfo;
 
   static createInstance(dto: CreatePostDomainDto): PostDocument {
     const post = new this();

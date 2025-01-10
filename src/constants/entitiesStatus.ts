@@ -12,3 +12,8 @@ export enum PostStatusEnum {
   ACTIVE = 'ACTIVE',
   DELETED = 'DELETED',
 }
+
+export enum CommentStatusEnum {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}

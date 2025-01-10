@@ -21,6 +21,16 @@ export class PostService {
     private blogRepository: BlogRepository,
   ) {}
 
+  async getPostById(id: string): Promise<string | null> {
+    const post = await this.postRepository.findPostById(id);
+
+    if (!post) {
+      throw new NotFoundException(`Post with id ${id} not found`);
+    }
+
+    return post._id.toString();
+  }
+
   async createPost(dto: PostInputDto): Promise<ObjectId | void> {
     const blog = await this.blogRepository.findBlogById(dto.blogId);
 

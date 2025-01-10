@@ -3,7 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 @Schema({
   _id: false,
 })
-export class LikesDislikesDBData {
+export class BaseLikesDislikesDBData {
   @Prop({ type: String, required: true })
   userId: string;
 
@@ -14,5 +14,6 @@ export class LikesDislikesDBData {
   addedAt: Date;
 }
 
-export const LikesDislikesDBDataSchema =
-  SchemaFactory.createForClass(LikesDislikesDBData);
+export const BaseLikesDislikesDbDataSchema = SchemaFactory.createForClass(
+  BaseLikesDislikesDBData,
+);

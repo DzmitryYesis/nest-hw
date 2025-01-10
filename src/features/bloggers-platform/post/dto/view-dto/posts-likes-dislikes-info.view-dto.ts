@@ -1,21 +1,21 @@
 import { UserLikeStatus } from '../../../../../constants';
-import { LikesDislikesDBData } from '../../domain';
 import { NewestLikeViewDto } from './newest-likes.view-dto';
+import { BaseLikesDislikesDBData } from '../../../../../core';
 
-export class ExtendedLikesInfoViewDto {
+export class PostsLikesDislikesInfoViewDto {
   likesCount: number;
   dislikesCount: number;
   myStatus: UserLikeStatus;
   newestLikes: NewestLikeViewDto[];
 
   constructor(
-    likes: LikesDislikesDBData[],
-    dislikes: LikesDislikesDBData[],
+    likes: BaseLikesDislikesDBData[],
+    dislikes: BaseLikesDislikesDBData[],
     userId?: string,
   ) {
     this.likesCount = likes.length;
     this.dislikesCount = dislikes.length;
-    this.myStatus = ExtendedLikesInfoViewDto.getUserLikeStatus(
+    this.myStatus = PostsLikesDislikesInfoViewDto.getUserLikeStatus(
       likes,
       dislikes,
       userId,
@@ -27,8 +27,8 @@ export class ExtendedLikesInfoViewDto {
   }
 
   private static getUserLikeStatus(
-    likes: LikesDislikesDBData[],
-    dislikes: LikesDislikesDBData[],
+    likes: BaseLikesDislikesDBData[],
+    dislikes: BaseLikesDislikesDBData[],
     userId?: string,
   ): UserLikeStatus {
     if (userId && likes.some((item) => item.userId === userId)) {
