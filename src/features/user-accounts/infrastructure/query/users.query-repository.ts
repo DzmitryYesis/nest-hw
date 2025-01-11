@@ -3,7 +3,7 @@ import { UsersQueryParams, UserViewDto } from '../../dto';
 import { User, UserModelType } from '../../domain';
 import { InjectModel } from '@nestjs/mongoose';
 import { ObjectId } from 'mongodb';
-import { PaginatedViewDto } from '../../../../core/dto';
+import { PaginatedViewDto } from '../../../../core';
 import { UserStatusEnum } from '../../../../constants';
 
 @Injectable()
@@ -67,7 +67,6 @@ export class UsersQueryRepository {
       userStatus: { $ne: UserStatusEnum.DELETED },
     });
 
-    //TODO fix logic for error. Add logic to modal
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }

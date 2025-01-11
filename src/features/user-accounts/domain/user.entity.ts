@@ -7,14 +7,30 @@ import { CreateUserDomainDto } from '../dto';
 import { HydratedDocument, Model } from 'mongoose';
 import { v4 as uuidV4 } from 'uuid';
 import { add } from 'date-fns';
-import { UserStatusEnum } from '../../../constants';
+import {
+  emailMatch,
+  loginLength,
+  loginMatch,
+  UserStatusEnum,
+} from '../../../constants';
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, type: String })
+  @Prop({
+    required: true,
+    type: String,
+    ...loginLength,
+    match: loginMatch,
+    unique: true,
+  })
   login: string;
 
-  @Prop({ required: true, type: String })
+  @Prop({
+    required: true,
+    type: String,
+    match: emailMatch,
+    unique: true,
+  })
   email: string;
 
   @Prop({ required: true, type: String })

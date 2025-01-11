@@ -9,10 +9,11 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
+import { PaginatedViewDto } from '../../../core';
 import { UsersService } from '../application';
 import { UsersQueryRepository } from '../infrastructure';
-import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
-import { PaginatedViewDto } from '../../../core/dto';
+import { Types } from 'mongoose';
 
 @Controller('users')
 export class UsersController {
@@ -31,7 +32,10 @@ export class UsersController {
   }
 
   @Post()
-  async createUser(@Body() data: UserInputDto): Promise<UserViewDto> {
+  async createUser(@Body() data: UserInputDto): Promise<UserViewDto | void> {
+    await this.usersService.checkIsUserUnique('login', data.login);
+    await this.usersService.checkIsUserUnique('email', data.email);
+
     const userId = await this.usersService.createUser(data);
 
     return this.usersQueryRepository.getUserById(userId);
@@ -39,7 +43,7 @@ export class UsersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUserById(@Param('id') id: string): Promise<void> {
+  async deleteUserById(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.usersService.deleteUserById(id);
   }
 }

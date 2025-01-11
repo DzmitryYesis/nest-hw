@@ -11,9 +11,12 @@ export class UsersRepository {
     private UserModel: UserModelType,
   ) {}
 
-  async findUserById(id: string): Promise<UserDocument | null> {
+  async findByCredentials(
+    field: string,
+    value: string | ObjectId,
+  ): Promise<UserDocument | null> {
     return this.UserModel.findOne({
-      _id: new ObjectId(id),
+      [field]: value,
       userStatus: { $ne: UserStatusEnum.DELETED },
     });
   }

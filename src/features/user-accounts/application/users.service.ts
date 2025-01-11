@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UsersRepository } from '../infrastructure';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UserInputDto } from '../dto';
 import bcrypt from 'bcrypt';
 import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
+import { UsersRepository } from '../infrastructure';
 
 @Injectable()
 export class UsersService {
@@ -32,8 +36,25 @@ export class UsersService {
     return user._id;
   }
 
-  async deleteUserById(id: string): Promise<void> {
-    const user = await this.usersRepository.findUserById(id);
+  async checkIsUserUnique(field: string, value: string): Promise<boolean> {
+    const user = await this.usersRepository.findByCredentials(field, value);
+
+    if (user) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: field,
+            message: 'not unique',
+          },
+        ],
+      });
+    }
+
+    return false;
+  }
+
+  async deleteUserById(id: ObjectId): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('_id', id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);

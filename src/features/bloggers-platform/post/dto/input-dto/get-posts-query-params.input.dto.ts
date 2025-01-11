@@ -1,11 +1,11 @@
 import { BaseQueryParams } from '../../../../../core';
-import { PostsSortBy } from '../../../../../constants';
+import { PostsSortByEnum } from '../../../../../constants';
 
-export class PostsQueryParams extends BaseQueryParams<PostsSortBy> {
-  sortBy: PostsSortBy = PostsSortBy.CREATED_AT;
+export class PostsQueryParams extends BaseQueryParams<PostsSortByEnum> {
+  sortBy: PostsSortByEnum = PostsSortByEnum.CREATED_AT;
 
   constructor(query: Partial<PostsQueryParams>) {
     super(query);
-    this.sortBy = query.sortBy || PostsSortBy.CREATED_AT;
+    this.sortBy = query.sortBy || PostsSortByEnum.CREATED_AT;
   }
 }
