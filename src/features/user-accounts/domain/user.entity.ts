@@ -70,6 +70,18 @@ export class User {
     return user as UserDocument;
   }
 
+  confirmUser() {
+    this.emailConfirmation.isConfirmed = true;
+  }
+
+  changeConfirmationCode() {
+    this.emailConfirmation.confirmationCode = uuidV4();
+    this.emailConfirmation.expirationDate = add(new Date(), {
+      hours: 1,
+      minutes: 3,
+    });
+  }
+
   deleteUser() {
     this.userStatus = UserStatusEnum.DELETED;
     this.deletedAt = new Date();

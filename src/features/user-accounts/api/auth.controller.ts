@@ -1,7 +1,11 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { UsersService } from '../application';
 import { AUTH_API_PATH } from '../../../constants';
-import { UserConfirmationInputDto, UserInputDto } from '../dto';
+import {
+  UserConfirmationInputDto,
+  UserInputDto,
+  ResendConfirmationCodeInputDto,
+} from '../dto';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
 export class AuthController {
@@ -22,5 +26,13 @@ export class AuthController {
     @Body() data: UserConfirmationInputDto,
   ): Promise<void> {
     return this.usersService.confirmUser(data.code);
+  }
+
+  @Post(AUTH_API_PATH.REGISTRATION_EMAIL_RESENDING)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resendConfirmationCode(
+    @Body() data: ResendConfirmationCodeInputDto,
+  ): Promise<void> {
+    return this.usersService.resendConfirmationCode(data.email);
   }
 }

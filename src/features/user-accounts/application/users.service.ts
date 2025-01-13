@@ -69,7 +69,38 @@ export class UsersService {
       });
     }
 
-    user.emailConfirmation.isConfirmed = true;
+    user.confirmUser();
+
+    await this.usersRepository.save(user);
+  }
+
+  async resendConfirmationCode(email: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('email', email);
+
+    if (
+      !user ||
+      user.emailConfirmation.expirationDate < new Date() ||
+      user.emailConfirmation.isConfirmed
+    ) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'email',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    user.changeConfirmationCode();
+
+    this.emailNotificationService
+      .sendEmailWithConfirmationCode({
+        login: user.login,
+        email: user.email,
+        code: user.emailConfirmation.confirmationCode,
+      })
+      .catch((e) => console.log('Error send email: ', e));
 
     await this.usersRepository.save(user);
   }
