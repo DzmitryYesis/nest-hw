@@ -4,3 +4,4 @@ export * from './user-confirmation.input-dto';
 export * from './resend-confirmation-code.input-dto';
 export * from './password-recovery.input-dto';
 export * from './change-password.input-dto';
+export * from './login.input-dto';

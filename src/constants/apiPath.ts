@@ -7,4 +7,5 @@ export const AUTH_API_PATH = {
   REGISTRATION_EMAIL_RESENDING: 'registration-email-resending',
   PASSWORD_RECOVERY: 'password-recovery',
   NEW_PASSWORD: 'new-password',
+  LOGIN: 'login',
 };

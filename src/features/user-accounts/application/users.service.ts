@@ -2,16 +2,24 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { ChangePasswordInputDto, CreateUserDto } from '../dto';
+import {
+  ChangePasswordInputDto,
+  CreateUserDto,
+  LoginInputDto,
+  LoginViewDto,
+} from '../dto';
 import { v4 as uuidV4 } from 'uuid';
 import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../infrastructure';
 import { CryptoService, EmailNotificationService } from '../../service';
+import { JwtService } from '../../service/application';
 
 //TODO create auth.service
+//TODO create class for 400 error
 @Injectable()
 export class UsersService {
   constructor(
@@ -20,6 +28,7 @@ export class UsersService {
     private usersRepository: UsersRepository,
     private cryptoService: CryptoService,
     private emailNotificationService: EmailNotificationService,
+    private jwtService: JwtService,
   ) {}
 
   async createUser(dto: CreateUserDto): Promise<ObjectId> {
@@ -159,6 +168,43 @@ export class UsersService {
     user.changePassword(passwordHash);
 
     await this.usersRepository.save(user);
+  }
+
+  async login(data: LoginInputDto): Promise<LoginViewDto> {
+    const user = await this.usersRepository.findUserByLoginOrEmail(
+      data.loginOrEmail,
+    );
+
+    if (!user) {
+      throw new UnauthorizedException({
+        errorsMessages: [
+          {
+            field: 'loginOrEmail',
+            message: 'Bad login or email',
+          },
+        ],
+      });
+    }
+
+    const isValidPassword = await this.cryptoService.comparePassword(
+      data.password,
+      user.passwordHash,
+    );
+
+    if (!isValidPassword) {
+      throw new UnauthorizedException({
+        errorsMessages: [
+          {
+            field: 'password',
+            message: 'Wrong password',
+          },
+        ],
+      });
+    }
+
+    const accessToken = await this.jwtService.createAccessJWT(user._id);
+
+    return { accessToken };
   }
 
   async checkIsUserUnique(field: string, value: string): Promise<boolean> {

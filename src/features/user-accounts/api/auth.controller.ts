@@ -7,6 +7,8 @@ import {
   ResendConfirmationCodeInputDto,
   PasswordRecoveryInputDto,
   ChangePasswordInputDto,
+  LoginInputDto,
+  LoginViewDto,
 } from '../dto';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
@@ -15,7 +17,7 @@ export class AuthController {
 
   @Post(AUTH_API_PATH.REGISTRATION)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async createUser(@Body() data: UserInputDto): Promise<void> {
+  async registeredUser(@Body() data: UserInputDto): Promise<void> {
     await this.usersService.checkIsUserUnique('login', data.login);
     await this.usersService.checkIsUserUnique('email', data.email);
 
@@ -50,5 +52,11 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(@Body() data: ChangePasswordInputDto): Promise<void> {
     return this.usersService.changePassword(data);
+  }
+
+  @Post(AUTH_API_PATH.LOGIN)
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() data: LoginInputDto): Promise<LoginViewDto> {
+    return this.usersService.login(data);
   }
 }
