@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { UsersService } from '../application';
 import { AUTH_API_PATH } from '../../../constants';
-import { UserInputDto } from '../dto';
+import { UserConfirmationInputDto, UserInputDto } from '../dto';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
 export class AuthController {
@@ -14,5 +14,13 @@ export class AuthController {
     await this.usersService.checkIsUserUnique('email', data.email);
 
     await this.usersService.createUser({ ...data, isAdmin: false });
+  }
+
+  @Post(AUTH_API_PATH.REGISTRATION_CONFIRMATION)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async confirmUserRegistration(
+    @Body() data: UserConfirmationInputDto,
+  ): Promise<void> {
+    return this.usersService.confirmUser(data.code);
   }
 }

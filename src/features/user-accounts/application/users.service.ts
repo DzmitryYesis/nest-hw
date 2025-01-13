@@ -47,6 +47,33 @@ export class UsersService {
     return user._id;
   }
 
+  async confirmUser(code: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials(
+      'emailConfirmation.confirmationCode',
+      code,
+    );
+
+    if (
+      !user ||
+      user.emailConfirmation.confirmationCode !== code ||
+      user.emailConfirmation.expirationDate < new Date() ||
+      user.emailConfirmation.isConfirmed
+    ) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'code',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    user.emailConfirmation.isConfirmed = true;
+
+    await this.usersRepository.save(user);
+  }
+
   async checkIsUserUnique(field: string, value: string): Promise<boolean> {
     const user = await this.usersRepository.findByCredentials(field, value);
 
