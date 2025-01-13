@@ -3,12 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserInputDto } from '../dto';
-import bcrypt from 'bcrypt';
+import { CreateUserDto } from '../dto';
 import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../infrastructure';
+import { CryptoService, EmailNotificationService } from '../../service';
 
 @Injectable()
 export class UsersService {
@@ -16,20 +16,31 @@ export class UsersService {
     @InjectModel(User.name)
     private UserModel: UserModelType,
     private usersRepository: UsersRepository,
+    private cryptoService: CryptoService,
+    private emailNotificationService: EmailNotificationService,
   ) {}
 
-  async createUser(dto: UserInputDto): Promise<ObjectId> {
-    //TODO add logic to service module
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(dto.password, salt);
+  async createUser(dto: CreateUserDto): Promise<ObjectId> {
+    const passwordHash = await this.cryptoService.createPasswordHash(
+      dto.password,
+    );
 
     const user = this.UserModel.createInstance({
       email: dto.email,
       login: dto.login,
       passwordHash: passwordHash,
-      salt: salt,
-      isConfirmed: false,
+      isConfirmed: dto.isAdmin,
     });
+
+    if (!dto.isAdmin) {
+      this.emailNotificationService
+        .sendEmailWithConfirmationCode({
+          login: user.login,
+          email: user.email,
+          code: user.emailConfirmation.confirmationCode,
+        })
+        .catch((e) => console.log('Error send email: ', e));
+    }
 
     await this.usersRepository.save(user);
 

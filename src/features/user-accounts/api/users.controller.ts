@@ -14,8 +14,9 @@ import { PaginatedViewDto } from '../../../core';
 import { UsersService } from '../application';
 import { UsersQueryRepository } from '../infrastructure';
 import { Types } from 'mongoose';
+import { USERS_API_PATH } from '../../../constants';
 
-@Controller('users')
+@Controller(USERS_API_PATH)
 export class UsersController {
   constructor(
     private usersService: UsersService,
@@ -36,7 +37,10 @@ export class UsersController {
     await this.usersService.checkIsUserUnique('login', data.login);
     await this.usersService.checkIsUserUnique('email', data.email);
 
-    const userId = await this.usersService.createUser(data);
+    const userId = await this.usersService.createUser({
+      ...data,
+      isAdmin: true,
+    });
 
     return this.usersQueryRepository.getUserById(userId);
   }

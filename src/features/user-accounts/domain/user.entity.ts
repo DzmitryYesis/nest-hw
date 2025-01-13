@@ -36,9 +36,6 @@ export class User {
   @Prop({ required: true, type: String })
   passwordHash: string;
 
-  @Prop({ required: true, type: String })
-  salt: string;
-
   @Prop({ type: EmailConfirmationSchema })
   emailConfirmation: EmailConfirmation;
 
@@ -60,7 +57,6 @@ export class User {
     user.login = dto.login;
     user.email = dto.email;
     user.passwordHash = dto.passwordHash;
-    user.salt = dto.salt;
 
     user.emailConfirmation = {
       confirmationCode: uuidV4(),
