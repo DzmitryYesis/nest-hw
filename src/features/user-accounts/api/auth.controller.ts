@@ -5,6 +5,8 @@ import {
   UserConfirmationInputDto,
   UserInputDto,
   ResendConfirmationCodeInputDto,
+  PasswordRecoveryInputDto,
+  ChangePasswordInputDto,
 } from '../dto';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
@@ -34,5 +36,19 @@ export class AuthController {
     @Body() data: ResendConfirmationCodeInputDto,
   ): Promise<void> {
     return this.usersService.resendConfirmationCode(data.email);
+  }
+
+  @Post(AUTH_API_PATH.PASSWORD_RECOVERY)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async passwordRecovery(
+    @Body() data: PasswordRecoveryInputDto,
+  ): Promise<void> {
+    return this.usersService.passwordRecovery(data.email);
+  }
+
+  @Post(AUTH_API_PATH.NEW_PASSWORD)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(@Body() data: ChangePasswordInputDto): Promise<void> {
+    return this.usersService.changePassword(data);
   }
 }

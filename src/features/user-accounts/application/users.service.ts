@@ -3,13 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateUserDto } from '../dto';
+import { ChangePasswordInputDto, CreateUserDto } from '../dto';
+import { v4 as uuidV4 } from 'uuid';
 import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../infrastructure';
 import { CryptoService, EmailNotificationService } from '../../service';
 
+//TODO create auth.service
 @Injectable()
 export class UsersService {
   constructor(
@@ -101,6 +103,60 @@ export class UsersService {
         code: user.emailConfirmation.confirmationCode,
       })
       .catch((e) => console.log('Error send email: ', e));
+
+    await this.usersRepository.save(user);
+  }
+
+  async passwordRecovery(email: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('email', email);
+
+    if (user) {
+      user.createPasswordRecoveryCode();
+
+      this.emailNotificationService
+        .sendEmailWithRecoveryPasswordCode({
+          code: user.passwordRecovery.recoveryCode!,
+          email: email,
+        })
+        .catch((e) => console.log('Error send email: ', e));
+
+      await this.usersRepository.save(user);
+
+      return;
+    }
+
+    const invalidRecoveryCode = uuidV4();
+
+    this.emailNotificationService
+      .sendEmailWithRecoveryPasswordCode({
+        code: invalidRecoveryCode,
+        email: email,
+      })
+      .catch((e) => console.log('Error send email: ', e));
+  }
+
+  async changePassword(data: ChangePasswordInputDto): Promise<void> {
+    const user = await this.usersRepository.findByCredentials(
+      'passwordRecovery.recoveryCode',
+      data.recoveryCode,
+    );
+
+    if (!user || user.passwordRecovery.expirationDate! < new Date()) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'recoveryCode',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    const passwordHash = await this.cryptoService.createPasswordHash(
+      data.newPassword,
+    );
+
+    user.changePassword(passwordHash);
 
     await this.usersRepository.save(user);
   }
