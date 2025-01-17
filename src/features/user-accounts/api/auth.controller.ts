@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from '../application';
 import { AUTH_API_PATH } from '../../../constants';
 import {
@@ -9,11 +17,25 @@ import {
   ChangePasswordInputDto,
   LoginInputDto,
   LoginViewDto,
+  UserInfoViewDto,
 } from '../dto';
+import { ExtractUserFromRequest, BearerAuthGuard } from '../../../core';
+import { UsersQueryRepository } from '../infrastructure';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
 export class AuthController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private usersQueryRepository: UsersQueryRepository,
+  ) {}
+
+  @Get(AUTH_API_PATH.ME)
+  @UseGuards(BearerAuthGuard)
+  async getUserInfo(
+    @ExtractUserFromRequest() userId: string,
+  ): Promise<UserInfoViewDto> {
+    return this.usersQueryRepository.getUserInfoById(userId);
+  }
 
   @Post(AUTH_API_PATH.REGISTRATION)
   @HttpCode(HttpStatus.NO_CONTENT)

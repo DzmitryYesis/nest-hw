@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UsersQueryParams, UserViewDto } from '../../dto';
+import { UserInfoViewDto, UsersQueryParams, UserViewDto } from '../../dto';
 import { User, UserModelType } from '../../domain';
 import { InjectModel } from '@nestjs/mongoose';
 import { ObjectId } from 'mongodb';
@@ -72,5 +72,18 @@ export class UsersQueryRepository {
     }
 
     return UserViewDto.mapToView(user);
+  }
+
+  async getUserInfoById(id: string): Promise<UserInfoViewDto> {
+    const user = await this.UserModel.findOne({
+      _id: new ObjectId(id),
+      userStatus: { $ne: UserStatusEnum.DELETED },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    return UserInfoViewDto.mapToView(user);
   }
 }

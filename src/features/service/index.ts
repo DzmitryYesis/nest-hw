@@ -1,2 +1,6 @@
 export { UtilitiesApplicationModule } from './utilities.module';
-export { CryptoService, EmailNotificationService } from './application';
+export {
+  CryptoService,
+  EmailNotificationService,
+  JwtService,
+} from './application';

@@ -8,14 +8,16 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
-import { PaginatedViewDto } from '../../../core';
+import { PaginatedViewDto, BasicAuthGuard } from '../../../core';
 import { UsersService } from '../application';
 import { UsersQueryRepository } from '../infrastructure';
 import { Types } from 'mongoose';
 import { USERS_API_PATH } from '../../../constants';
 
+@UseGuards(BasicAuthGuard)
 @Controller(USERS_API_PATH)
 export class UsersController {
   constructor(
