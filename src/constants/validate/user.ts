@@ -10,4 +10,4 @@ export const passwordLength = {
   maxLength: 20,
 };
 
-export const emailMatch = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+export const emailMatch = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
