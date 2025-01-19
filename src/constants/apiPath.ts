@@ -10,3 +10,8 @@ export const AUTH_API_PATH = {
   LOGIN: 'login',
   ME: 'me',
 };
+
+export const DELETE_ALL_API_PATH = {
+  ROOT_URL: 'testing',
+  DELETE_ALL_DATA: 'all-data',
+};
