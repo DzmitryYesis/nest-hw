@@ -9,9 +9,9 @@ import {
   ErrorMessage,
   invalidId,
   UserTestManager,
+  getStringWithLength,
 } from './helpers';
 import { AppModule } from '../src/app.module';
-import { getStringWithLength } from './helpers/functions';
 import { UserViewDto } from '../src/features/user-accounts';
 
 describe('Users controller (e2e)', () => {
@@ -69,7 +69,7 @@ describe('Users controller (e2e)', () => {
     });
 
     it('should response with default queries data and 1 user', async () => {
-      const user = await userTestManager.createUser(1);
+      const { user } = await userTestManager.createUser(1);
 
       const response = await request(app.getHttpServer())
         .get(`/${USERS_API_PATH}`)
@@ -349,7 +349,7 @@ describe('Users controller (e2e)', () => {
     });
 
     it('should return response with status BAD_REQUEST_400 and not unique error for fields login, but email also not unique', async () => {
-      const user1 = await userTestManager.createUser(1);
+      const { user: user1 } = await userTestManager.createUser(1);
       const user2 = userTestManager.createUserInputDto(2);
 
       const response = await request(app.getHttpServer())
@@ -375,7 +375,7 @@ describe('Users controller (e2e)', () => {
     });
 
     it('should return response with status BAD_REQUEST_400 and not unique error for fields email', async () => {
-      const user1 = await userTestManager.createUser(1);
+      const { user: user1 } = await userTestManager.createUser(1);
       const user2 = userTestManager.createUserInputDto(2);
 
       const response = await request(app.getHttpServer())
@@ -423,7 +423,7 @@ describe('Users controller (e2e)', () => {
   //DELETE: /users/:id
   describe('Delete user', () => {
     it("shouldn't delete user without auth", async () => {
-      const user = await userTestManager.createUser(1);
+      const { user } = await userTestManager.createUser(1);
 
       await request(app.getHttpServer())
         .delete(`/${USERS_API_PATH}/${user.id}`)
@@ -465,7 +465,7 @@ describe('Users controller (e2e)', () => {
     });
 
     it('delete user by userId', async () => {
-      const user = await userTestManager.createUser(1);
+      const { user } = await userTestManager.createUser(1);
 
       await request(app.getHttpServer())
         .delete(`/${USERS_API_PATH}/${user.id}`)
@@ -474,7 +474,7 @@ describe('Users controller (e2e)', () => {
     });
 
     it("shouldn't delete user if user was deleted before", async () => {
-      const user = await userTestManager.createUser(1);
+      const { user } = await userTestManager.createUser(1);
 
       await request(app.getHttpServer())
         .delete(`/${USERS_API_PATH}/${user.id}`)

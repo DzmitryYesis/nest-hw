@@ -15,8 +15,11 @@ import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../infrastructure';
-import { CryptoService, EmailNotificationService } from '../../service';
-import { JwtService } from '../../service/application';
+import {
+  CryptoService,
+  EmailNotificationService,
+  JwtService,
+} from '../../service';
 
 //TODO create auth.service
 //TODO create class for 400 error

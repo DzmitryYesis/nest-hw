@@ -4,6 +4,7 @@ import { SETTINGS } from './settings';
 import { appSetup } from './setup/app.setup';
 
 //TODO Passport js
+//TODO UseCases
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

@@ -1,7 +1,7 @@
 import { UserDocument } from '../../domain';
 
 export class UserInfoViewDto {
-  id: string;
+  userId: string;
   login: string;
   email: string;
 
@@ -10,7 +10,7 @@ export class UserInfoViewDto {
 
     dto.login = user.login;
     dto.email = user.email;
-    dto.id = user._id.toString();
+    dto.userId = user._id.toString();
 
     return dto;
   }

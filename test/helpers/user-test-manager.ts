@@ -1,8 +1,14 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
-import { UserInputDto, UserViewDto } from '../../src/features/user-accounts';
+import {
+  LoginInputDto,
+  LoginViewDto,
+  UserInputDto,
+  UserViewDto,
+} from '../../src/features/user-accounts';
 import request from 'supertest';
-import { USERS_API_PATH } from '../../src/constants';
+import { AUTH_API_PATH, USERS_API_PATH } from '../../src/constants';
 import { delay } from './functions';
+import { mockMailService } from './mocks';
 
 export class UserTestManager {
   constructor(private app: INestApplication) {}
@@ -18,7 +24,7 @@ export class UserTestManager {
   async createUser(
     index: number,
     statusCode = HttpStatus.CREATED,
-  ): Promise<UserViewDto> {
+  ): Promise<{ user: UserViewDto; password: string }> {
     const userInputDto = this.createUserInputDto(index);
 
     const response = await request(this.app.getHttpServer())
@@ -27,7 +33,7 @@ export class UserTestManager {
       .auth('admin', 'qwerty')
       .expect(statusCode);
 
-    return response.body;
+    return { user: response.body, password: userInputDto.password };
   }
 
   async createSeveralUsers(index: number): Promise<UserViewDto[]> {
@@ -35,10 +41,57 @@ export class UserTestManager {
 
     for (let i = 1; i <= index; i++) {
       await delay(50);
-      const user = await this.createUser(i);
+      const { user } = await this.createUser(i);
       users.unshift(user);
     }
 
     return users;
+  }
+
+  async registeredUser(index: number): Promise<UserInputDto> {
+    const userInputDto = this.createUserInputDto(index);
+
+    await request(this.app.getHttpServer())
+      .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.REGISTRATION}`)
+      .send(userInputDto)
+      .expect(HttpStatus.NO_CONTENT);
+
+    return userInputDto;
+  }
+
+  async getUserRecoveryPasswordCode(
+    index: number,
+  ): Promise<{ user: UserInputDto; recoveryPasswordCode: string }> {
+    const user = await this.registeredUser(index);
+
+    await request(this.app.getHttpServer())
+      .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.PASSWORD_RECOVERY}`)
+      .send({ email: user.email })
+      .expect(HttpStatus.NO_CONTENT);
+
+    expect(
+      mockMailService.sendEmailWithRecoveryPasswordCode,
+    ).toHaveBeenCalledTimes(1);
+
+    const recoveryPasswordCode =
+      mockMailService.sendEmailWithRecoveryPasswordCode.mock.calls[0][0].code;
+
+    return { user, recoveryPasswordCode };
+  }
+
+  //TODO add refresh token
+  async loggedInUser(
+    index: number,
+  ): Promise<{ user: UserViewDto; accessToken: string }> {
+    const { user, password } = await this.createUser(index);
+
+    const response = await request(this.app.getHttpServer())
+      .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGIN}`)
+      .send({ loginOrEmail: user.login, password: password } as LoginInputDto)
+      .expect(HttpStatus.OK);
+
+    const { accessToken } = response.body as LoginViewDto;
+
+    return { user, accessToken };
   }
 }
