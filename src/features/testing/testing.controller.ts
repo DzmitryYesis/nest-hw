@@ -1,9 +1,10 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserModelType } from '../user-accounts';
 import { Blog, BlogModelType, Post, PostModelType } from '../bloggers-platform';
+import { User, UserModelType } from '../user-accounts';
+import { DELETE_ALL_API_PATH } from '../../constants';
 
-@Controller('testing')
+@Controller(DELETE_ALL_API_PATH.ROOT_URL)
 export class TestingController {
   constructor(
     @InjectModel(User.name)
@@ -14,7 +15,7 @@ export class TestingController {
     private PostModel: PostModelType,
   ) {}
 
-  @Delete('all-data')
+  @Delete(DELETE_ALL_API_PATH.DELETE_ALL_DATA)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAllData() {
     await this.UserModel.deleteMany({});

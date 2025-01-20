@@ -1,39 +1,234 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UsersRepository } from '../infrastructure';
-import { UserInputDto } from '../dto';
-import bcrypt from 'bcrypt';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  ChangePasswordInputDto,
+  CreateUserDto,
+  LoginInputDto,
+  LoginViewDto,
+} from '../dto';
+import { v4 as uuidV4 } from 'uuid';
 import { User, UserModelType } from '../domain';
 import { ObjectId } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
+import { UsersRepository } from '../infrastructure';
+import {
+  CryptoService,
+  EmailNotificationService,
+  JwtService,
+} from '../../service';
 
+//TODO create auth.service
+//TODO create class for 400 error
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name)
     private UserModel: UserModelType,
     private usersRepository: UsersRepository,
+    private cryptoService: CryptoService,
+    private emailNotificationService: EmailNotificationService,
+    private jwtService: JwtService,
   ) {}
 
-  async createUser(dto: UserInputDto): Promise<ObjectId> {
-    //TODO add logic to service module
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(dto.password, salt);
+  async createUser(dto: CreateUserDto): Promise<ObjectId> {
+    const passwordHash = await this.cryptoService.createPasswordHash(
+      dto.password,
+    );
 
     const user = this.UserModel.createInstance({
       email: dto.email,
       login: dto.login,
       passwordHash: passwordHash,
-      salt: salt,
-      isConfirmed: false,
+      isConfirmed: dto.isAdmin,
     });
+
+    if (!dto.isAdmin) {
+      this.emailNotificationService
+        .sendEmailWithConfirmationCode({
+          login: user.login,
+          email: user.email,
+          code: user.emailConfirmation.confirmationCode,
+        })
+        .catch((e) => console.log('Error send email: ', e));
+    }
 
     await this.usersRepository.save(user);
 
     return user._id;
   }
 
-  async deleteUserById(id: string): Promise<void> {
-    const user = await this.usersRepository.findUserById(id);
+  async confirmUser(code: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials(
+      'emailConfirmation.confirmationCode',
+      code,
+    );
+
+    if (
+      !user ||
+      user.emailConfirmation.confirmationCode !== code ||
+      user.emailConfirmation.expirationDate < new Date() ||
+      user.emailConfirmation.isConfirmed
+    ) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'code',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    user.confirmUser();
+
+    await this.usersRepository.save(user);
+  }
+
+  async resendConfirmationCode(email: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('email', email);
+
+    if (
+      !user ||
+      user.emailConfirmation.expirationDate < new Date() ||
+      user.emailConfirmation.isConfirmed
+    ) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'email',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    user.changeConfirmationCode();
+
+    this.emailNotificationService
+      .sendEmailWithConfirmationCode({
+        login: user.login,
+        email: user.email,
+        code: user.emailConfirmation.confirmationCode,
+      })
+      .catch((e) => console.log('Error send email: ', e));
+
+    await this.usersRepository.save(user);
+  }
+
+  async passwordRecovery(email: string): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('email', email);
+
+    if (user) {
+      user.createPasswordRecoveryCode();
+
+      this.emailNotificationService
+        .sendEmailWithRecoveryPasswordCode({
+          code: user.passwordRecovery.recoveryCode!,
+          email: email,
+        })
+        .catch((e) => console.log('Error send email: ', e));
+
+      await this.usersRepository.save(user);
+
+      return;
+    }
+
+    const invalidRecoveryCode = uuidV4();
+
+    this.emailNotificationService
+      .sendEmailWithRecoveryPasswordCode({
+        code: invalidRecoveryCode,
+        email: email,
+      })
+      .catch((e) => console.log('Error send email: ', e));
+  }
+
+  async changePassword(data: ChangePasswordInputDto): Promise<void> {
+    const user = await this.usersRepository.findByCredentials(
+      'passwordRecovery.recoveryCode',
+      data.recoveryCode,
+    );
+
+    if (!user || user.passwordRecovery.expirationDate! < new Date()) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'recoveryCode',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    const passwordHash = await this.cryptoService.createPasswordHash(
+      data.newPassword,
+    );
+
+    user.changePassword(passwordHash);
+
+    await this.usersRepository.save(user);
+  }
+
+  async login(data: LoginInputDto): Promise<LoginViewDto> {
+    const user = await this.usersRepository.findUserByLoginOrEmail(
+      data.loginOrEmail,
+    );
+
+    if (!user) {
+      throw new UnauthorizedException({
+        errorsMessages: [
+          {
+            field: 'loginOrEmail',
+            message: 'Bad login or email',
+          },
+        ],
+      });
+    }
+
+    const isValidPassword = await this.cryptoService.comparePassword(
+      data.password,
+      user.passwordHash,
+    );
+
+    if (!isValidPassword) {
+      throw new UnauthorizedException({
+        errorsMessages: [
+          {
+            field: 'password',
+            message: 'Wrong password',
+          },
+        ],
+      });
+    }
+
+    const accessToken = await this.jwtService.createAccessJWT(user._id);
+
+    return { accessToken };
+  }
+
+  async checkIsUserUnique(field: string, value: string): Promise<boolean> {
+    const user = await this.usersRepository.findByCredentials(field, value);
+
+    if (user) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: field,
+            message: 'not unique',
+          },
+        ],
+      });
+    }
+
+    return false;
+  }
+
+  async deleteUserById(id: ObjectId): Promise<void> {
+    const user = await this.usersRepository.findByCredentials('_id', id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);

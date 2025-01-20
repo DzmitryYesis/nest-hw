@@ -7,24 +7,44 @@ import { CreateUserDomainDto } from '../dto';
 import { HydratedDocument, Model } from 'mongoose';
 import { v4 as uuidV4 } from 'uuid';
 import { add } from 'date-fns';
-import { UserStatusEnum } from '../../../constants';
+import {
+  emailMatch,
+  loginLength,
+  loginMatch,
+  UserStatusEnum,
+} from '../../../constants';
+import {
+  PasswordRecovery,
+  PasswordRecoverySchema,
+} from './password-recovery.schema';
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, type: String })
+  @Prop({
+    required: true,
+    type: String,
+    ...loginLength,
+    match: loginMatch,
+    unique: true,
+  })
   login: string;
 
-  @Prop({ required: true, type: String })
+  @Prop({
+    required: true,
+    type: String,
+    match: emailMatch,
+    unique: true,
+  })
   email: string;
 
   @Prop({ required: true, type: String })
   passwordHash: string;
 
-  @Prop({ required: true, type: String })
-  salt: string;
-
   @Prop({ type: EmailConfirmationSchema })
   emailConfirmation: EmailConfirmation;
+
+  @Prop({ type: PasswordRecoverySchema })
+  passwordRecovery: PasswordRecovery;
 
   @Prop({ type: Date })
   createdAt: Date;
@@ -44,7 +64,6 @@ export class User {
     user.login = dto.login;
     user.email = dto.email;
     user.passwordHash = dto.passwordHash;
-    user.salt = dto.salt;
 
     user.emailConfirmation = {
       confirmationCode: uuidV4(),
@@ -55,7 +74,42 @@ export class User {
       isConfirmed: dto.isConfirmed,
     } as EmailConfirmation;
 
+    user.passwordRecovery = {
+      recoveryCode: null,
+      expirationDate: null,
+      lastUpdateDate: null,
+    } as PasswordRecovery;
+
     return user as UserDocument;
+  }
+
+  confirmUser() {
+    this.emailConfirmation.isConfirmed = true;
+  }
+
+  changeConfirmationCode() {
+    this.emailConfirmation.confirmationCode = uuidV4();
+    this.emailConfirmation.expirationDate = add(new Date(), {
+      hours: 1,
+      minutes: 30,
+    });
+  }
+
+  createPasswordRecoveryCode() {
+    this.passwordRecovery.recoveryCode = uuidV4();
+    this.passwordRecovery.expirationDate = add(new Date(), {
+      hours: 1,
+      minutes: 30,
+    });
+  }
+
+  changePassword(password: string) {
+    this.passwordHash = password;
+    this.passwordRecovery = {
+      recoveryCode: null,
+      expirationDate: null,
+      lastUpdateDate: new Date(),
+    };
   }
 
   deleteUser() {

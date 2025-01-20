@@ -8,13 +8,17 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
+import { PaginatedViewDto, BasicAuthGuard } from '../../../core';
 import { UsersService } from '../application';
 import { UsersQueryRepository } from '../infrastructure';
-import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
-import { PaginatedViewDto } from '../../../core/dto';
+import { Types } from 'mongoose';
+import { USERS_API_PATH } from '../../../constants';
 
-@Controller('users')
+@UseGuards(BasicAuthGuard)
+@Controller(USERS_API_PATH)
 export class UsersController {
   constructor(
     private usersService: UsersService,
@@ -31,15 +35,21 @@ export class UsersController {
   }
 
   @Post()
-  async createUser(@Body() data: UserInputDto): Promise<UserViewDto> {
-    const userId = await this.usersService.createUser(data);
+  async createUser(@Body() data: UserInputDto): Promise<UserViewDto | void> {
+    await this.usersService.checkIsUserUnique('login', data.login);
+    await this.usersService.checkIsUserUnique('email', data.email);
+
+    const userId = await this.usersService.createUser({
+      ...data,
+      isAdmin: true,
+    });
 
     return this.usersQueryRepository.getUserById(userId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUserById(@Param('id') id: string): Promise<void> {
+  async deleteUserById(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.usersService.deleteUserById(id);
   }
 }
