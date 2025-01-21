@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { BlogService } from '../application';
 import { BlogQueryRepository } from '../infrastructure';
-import { PaginatedViewDto } from '../../../../core/dto';
+import { PaginatedViewDto } from '../../../../core';
 import {
   BlogInputDto,
   BlogsQueryParams,
@@ -21,8 +21,9 @@ import {
 } from '../dto';
 import { ObjectId } from 'mongodb';
 import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
+import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 
-@Controller('blogs')
+@Controller(BLOGS_API_PATH)
 export class BlogController {
   constructor(
     private blogService: BlogService,
@@ -44,7 +45,7 @@ export class BlogController {
     return this.blogQueryRepository.getBlogById(new ObjectId(id));
   }
 
-  @Get(':id/posts')
+  @Get(`:id/${POSTS_API_PATH}`)
   async getPostsForBlog(
     @Param('id') id: string,
     @Query() query: PostsQueryParams,
@@ -62,7 +63,7 @@ export class BlogController {
     return this.blogQueryRepository.getBlogById(blogId);
   }
 
-  @Post(':id/posts')
+  @Post(`:id/${POSTS_API_PATH}`)
   async createPostForBlog(
     @Param('id') id: string,
     @Body() data: PostForBlogInputDto,
