@@ -22,6 +22,7 @@ import {
 import { ObjectId } from 'mongodb';
 import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
 import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
+import { Types } from 'mongoose';
 
 @Controller(BLOGS_API_PATH)
 export class BlogController {
@@ -41,13 +42,13 @@ export class BlogController {
   }
 
   @Get(':id')
-  async getBlogById(@Param('id') id: string): Promise<BlogViewDto> {
+  async getBlogById(@Param('id') id: Types.ObjectId): Promise<BlogViewDto> {
     return this.blogQueryRepository.getBlogById(new ObjectId(id));
   }
 
   @Get(`:id/${POSTS_API_PATH}`)
   async getPostsForBlog(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
@@ -65,7 +66,7 @@ export class BlogController {
 
   @Post(`:id/${POSTS_API_PATH}`)
   async createPostForBlog(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: PostForBlogInputDto,
   ): Promise<PostViewDto> {
     const postId = await this.blogService.createPostForBlog(id, data);
@@ -76,7 +77,7 @@ export class BlogController {
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: BlogInputDto,
   ): Promise<void> {
     return this.blogService.updateBlog(id, data);
@@ -84,7 +85,7 @@ export class BlogController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBlog(@Param('id') id: string): Promise<void> {
+  async deleteBlog(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.blogService.deleteBlogById(id);
   }
 }

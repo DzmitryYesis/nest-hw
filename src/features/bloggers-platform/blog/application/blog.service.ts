@@ -23,7 +23,7 @@ export class BlogService {
     private postRepository: PostRepository,
   ) {}
 
-  async getBlogById(id: string): Promise<string | null> {
+  async getBlogById(id: ObjectId): Promise<string | null> {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
@@ -46,7 +46,7 @@ export class BlogService {
   }
 
   async createPostForBlog(
-    id: string,
+    id: ObjectId,
     dto: PostForBlogInputDto,
   ): Promise<ObjectId | void> {
     const blog = await this.blogRepository.findBlogById(id);
@@ -59,7 +59,7 @@ export class BlogService {
       title: dto.title,
       content: dto.content,
       shortDescription: dto.shortDescription,
-      blogId: id,
+      blogId: id.toString(),
       blogName: blog.name,
     });
 
@@ -68,7 +68,7 @@ export class BlogService {
     return post._id;
   }
 
-  async updateBlog(id: string, dto: BlogInputDto): Promise<void> {
+  async updateBlog(id: ObjectId, dto: BlogInputDto): Promise<void> {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
@@ -80,7 +80,7 @@ export class BlogService {
     await this.blogRepository.save(blog);
   }
 
-  async deleteBlogById(id: string): Promise<void> {
+  async deleteBlogById(id: ObjectId): Promise<void> {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {

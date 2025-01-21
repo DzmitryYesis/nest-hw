@@ -14,14 +14,15 @@ import { PostService } from '../application';
 import { PostQueryRepository } from '../infrastructure';
 import { PostInputDto, PostsQueryParams, PostViewDto } from '../dto';
 import { PaginatedViewDto } from '../../../../core';
-import { ObjectId } from 'mongodb';
 import {
   CommentQueryRepository,
   CommentsQueryParams,
   CommentViewDto,
 } from '../../comment';
+import { Types } from 'mongoose';
+import { COMMENTS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 
-@Controller('posts')
+@Controller(POSTS_API_PATH)
 export class PostController {
   constructor(
     private postService: PostService,
@@ -39,13 +40,13 @@ export class PostController {
   }
 
   @Get(':id')
-  async getPostById(@Param('id') id: string): Promise<PostViewDto> {
-    return this.postQueryRepository.getPostById(new ObjectId(id));
+  async getPostById(@Param('id') id: Types.ObjectId): Promise<PostViewDto> {
+    return this.postQueryRepository.getPostById(id);
   }
 
-  @Get(':id/comments')
+  @Get(`:id/${COMMENTS_API_PATH}`)
   async getCommentsForPost(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
@@ -67,7 +68,7 @@ export class PostController {
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updatePost(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: PostInputDto,
   ): Promise<void> {
     return this.postService.updatePost(id, data);
@@ -75,7 +76,7 @@ export class PostController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePost(@Param('id') id: string): Promise<void> {
+  async deletePost(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.postService.deletePostById(id);
   }
 }

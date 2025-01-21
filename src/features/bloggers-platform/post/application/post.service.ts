@@ -21,7 +21,7 @@ export class PostService {
     private blogRepository: BlogRepository,
   ) {}
 
-  async getPostById(id: string): Promise<string | null> {
+  async getPostById(id: ObjectId): Promise<string | null> {
     const post = await this.postRepository.findPostById(id);
 
     if (!post) {
@@ -32,7 +32,9 @@ export class PostService {
   }
 
   async createPost(dto: PostInputDto): Promise<ObjectId | void> {
-    const blog = await this.blogRepository.findBlogById(dto.blogId);
+    const blog = await this.blogRepository.findBlogById(
+      new ObjectId(dto.blogId),
+    );
 
     if (!blog) {
       throw new NotFoundException(`Blog with id ${dto.blogId} not found`);
@@ -51,9 +53,11 @@ export class PostService {
     return post._id;
   }
 
-  async updatePost(id: string, dto: PostInputDto): Promise<void> {
+  async updatePost(id: ObjectId, dto: PostInputDto): Promise<void> {
     const post = await this.postRepository.findPostById(id);
-    const blog = await this.blogRepository.findBlogById(dto.blogId);
+    const blog = await this.blogRepository.findBlogById(
+      new ObjectId(dto.blogId),
+    );
 
     if (!blog) {
       throw new NotFoundException(`Blog with id ${dto.blogId} not found`);
@@ -67,7 +71,7 @@ export class PostService {
     await this.postRepository.save(post);
   }
 
-  async deletePostById(id: string): Promise<void> {
+  async deletePostById(id: ObjectId): Promise<void> {
     const post = await this.postRepository.findPostById(id);
 
     if (!post) {

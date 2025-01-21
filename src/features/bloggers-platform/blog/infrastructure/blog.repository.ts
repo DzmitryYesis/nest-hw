@@ -11,9 +11,9 @@ export class BlogRepository {
     private BlogModel: BlogModelType,
   ) {}
 
-  async findBlogById(id: string): Promise<BlogDocument | null> {
+  async findBlogById(id: ObjectId): Promise<BlogDocument | null> {
     return this.BlogModel.findOne({
-      _id: new ObjectId(id),
+      _id: id,
       blogStatus: { $ne: BlogStatusEnum.DELETED },
     });
   }
