@@ -27,7 +27,14 @@ export class BlogService {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
-      throw new NotFoundException(`Blog with id ${id} not found`);
+      throw new NotFoundException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: `Blog with id ${id} not found`,
+          },
+        ],
+      });
     }
 
     return blog._id.toString();
@@ -52,7 +59,14 @@ export class BlogService {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
-      throw new NotFoundException(`Blog with id ${id} not found`);
+      throw new NotFoundException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: `Blog with id ${id} not found`,
+          },
+        ],
+      });
     }
 
     const post = this.PostModel.createInstance({
@@ -72,7 +86,14 @@ export class BlogService {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
-      throw new NotFoundException(`Blog with id ${id} not found`);
+      throw new NotFoundException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: `Blog with id ${id} not found`,
+          },
+        ],
+      });
     }
 
     blog.updateBlog(dto);
@@ -84,7 +105,14 @@ export class BlogService {
     const blog = await this.blogRepository.findBlogById(id);
 
     if (!blog) {
-      throw new NotFoundException(`Blog with id ${id} not found`);
+      throw new NotFoundException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: `Blog with id ${id} not found`,
+          },
+        ],
+      });
     }
 
     blog.deleteBlog();

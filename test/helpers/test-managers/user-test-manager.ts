@@ -4,11 +4,11 @@ import {
   LoginViewDto,
   UserInputDto,
   UserViewDto,
-} from '../../src/features/user-accounts';
+} from '../../../src/features/user-accounts';
 import request from 'supertest';
-import { AUTH_API_PATH, USERS_API_PATH } from '../../src/constants';
-import { delay } from './functions';
-import { mockMailService } from './mocks';
+import { AUTH_API_PATH, USERS_API_PATH } from '../../../src/constants';
+import { delay } from '../functions';
+import { mockMailService } from '../mocks';
 
 export class UserTestManager {
   constructor(private app: INestApplication) {}

@@ -9,10 +9,11 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BlogService } from '../application';
 import { BlogQueryRepository } from '../infrastructure';
-import { PaginatedViewDto } from '../../../../core';
+import { BasicAuthGuard, PaginatedViewDto } from '../../../../core';
 import {
   BlogInputDto,
   BlogsQueryParams,
@@ -23,7 +24,9 @@ import { ObjectId } from 'mongodb';
 import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
 import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 import { Types } from 'mongoose';
+import { Public } from '../../../../core/decorators';
 
+@UseGuards(BasicAuthGuard)
 @Controller(BLOGS_API_PATH)
 export class BlogController {
   constructor(
@@ -32,6 +35,7 @@ export class BlogController {
     private postQueryRepository: PostQueryRepository,
   ) {}
 
+  @Public()
   @Get()
   async getAllBlogs(
     @Query() query: BlogsQueryParams,
@@ -41,11 +45,13 @@ export class BlogController {
     return this.blogQueryRepository.getAllBlogs(queryParams);
   }
 
+  @Public()
   @Get(':id')
   async getBlogById(@Param('id') id: Types.ObjectId): Promise<BlogViewDto> {
     return this.blogQueryRepository.getBlogById(new ObjectId(id));
   }
 
+  @Public()
   @Get(`:id/${POSTS_API_PATH}`)
   async getPostsForBlog(
     @Param('id') id: Types.ObjectId,

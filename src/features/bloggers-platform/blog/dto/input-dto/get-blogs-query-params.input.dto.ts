@@ -11,9 +11,9 @@ export class BlogsQueryParams extends BaseQueryParams<BlogsSortByEnum> {
   @Optional()
   searchNameTerm: string | null = null;
 
-  constructor(query: Partial<BlogsQueryParams>) {
+  constructor(query: Partial<BlogsQueryParams> = {}) {
     super(query);
-    this.sortBy = query.sortBy || BlogsSortByEnum.CREATED_AT;
+    this.sortBy = query.sortBy ?? BlogsSortByEnum.CREATED_AT;
     this.searchNameTerm = query.searchNameTerm || null;
   }
 }

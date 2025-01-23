@@ -8,7 +8,7 @@ export class PostsQueryParams extends BaseQueryParams<PostsSortByEnum> {
   @IsEnum(PostsSortByEnum)
   sortBy: PostsSortByEnum = PostsSortByEnum.CREATED_AT;
 
-  constructor(query: Partial<PostsQueryParams>) {
+  constructor(query: Partial<PostsQueryParams> = {}) {
     super(query);
     this.sortBy = query.sortBy || PostsSortByEnum.CREATED_AT;
   }

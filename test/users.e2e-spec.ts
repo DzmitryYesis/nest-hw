@@ -244,7 +244,7 @@ describe('Users controller (e2e)', () => {
         items: users.slice(4, 8),
       });
       expect(response.body.items.length).toBe(4);
-    });
+    }, 15000);
 
     it('should response with queries searchLoginTerm=2 searchEmailTerm=4 and 3 users', async () => {
       const users = await userTestManager.createSeveralUsers(12);
