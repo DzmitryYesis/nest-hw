@@ -1,7 +1,11 @@
 export const USERS_API_PATH = 'users';
 export const BLOGS_API_PATH = 'blogs';
-export const POSTS_API_PATH = 'posts';
 export const COMMENTS_API_PATH = 'comments';
+
+export const POSTS_API_PATH = {
+  ROOT_URL: 'posts',
+  LIKE_STATUS: 'like-status',
+};
 
 export const AUTH_API_PATH = {
   ROOT_URL: 'auth',

@@ -24,12 +24,16 @@ import {
   CommentRepository,
   CommentQueryRepository,
 } from './comment';
+import { UtilitiesApplicationModule } from '../service';
+import { UserAccountsModule } from '../user-accounts';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
     MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
     MongooseModule.forFeature([{ name: Comment.name, schema: CommentSchema }]),
+    UtilitiesApplicationModule,
+    UserAccountsModule,
   ],
   controllers: [BlogController, PostController, CommentController],
   providers: [

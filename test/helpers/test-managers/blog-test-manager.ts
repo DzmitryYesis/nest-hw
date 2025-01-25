@@ -55,7 +55,7 @@ export class BlogTestManager {
     const postForBlogInputDto = this.createPostForBlogInputDto(index);
 
     const response = await request(this.app.getHttpServer())
-      .post(`/${BLOGS_API_PATH}/${blogId}/${POSTS_API_PATH}`)
+      .post(`/${BLOGS_API_PATH}/${blogId}/${POSTS_API_PATH.ROOT_URL}`)
       .send(postForBlogInputDto)
       .auth('admin', 'qwerty')
       .expect(HttpStatus.CREATED);

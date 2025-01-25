@@ -4,6 +4,7 @@ import { HydratedDocument, Model } from 'mongoose';
 import { CreatePostDomainDto, UpdatePostDomainDto } from '../dto';
 import {
   BaseExtendedLikesInfoSchema,
+  BaseLikesDislikesDBData,
   BaseLikesDislikesInfo,
 } from '../../../../core/domain';
 
@@ -61,6 +62,17 @@ export class Post {
     this.content = dto.content;
     this.blogId = dto.blogId;
     this.blogName = dto.blogName;
+  }
+
+  addLikeOrDislike(
+    field: 'likes' | 'dislikes',
+    dto: BaseLikesDislikesDBData,
+  ): void {
+    this.extendedLikesInfo[field].push(dto);
+  }
+
+  deleteLikeOrDislike(field: 'likes' | 'dislikes', userId: string): void {
+    this.extendedLikesInfo[field].filter((item) => item.userId !== userId);
   }
 
   deletePost(): void {

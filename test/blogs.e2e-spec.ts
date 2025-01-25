@@ -326,7 +326,7 @@ describe('Blogs controller (e2e)', () => {
       await blogTestManager.createBlog(1);
 
       await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${invalidId}/posts`)
+        .get(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.NOT_FOUND);
     });
 
@@ -334,7 +334,7 @@ describe('Blogs controller (e2e)', () => {
       await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${invalidId}/posts`)
+        .get(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.NOT_FOUND);
 
       console.log(response.body);
@@ -357,7 +357,7 @@ describe('Blogs controller (e2e)', () => {
       const blog = await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -376,7 +376,7 @@ describe('Blogs controller (e2e)', () => {
       const post = await blogTestManager.createPostForBlog(1, blog.id);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -397,7 +397,7 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}?sortBy=er&sortDirection=df&pageNumber=-4&pageSize=g`,
+          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?sortBy=er&sortDirection=df&pageNumber=-4&pageSize=g`,
         )
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -437,7 +437,7 @@ describe('Blogs controller (e2e)', () => {
       );
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -461,7 +461,7 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}?pageSize=30&sortBy=title`,
+          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=30&sortBy=title`,
         )
         .expect(HttpStatus.OK);
 
@@ -488,7 +488,7 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}?pageSize=5&pageNumber=3&sortDirection=asc`,
+          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=5&pageNumber=3&sortDirection=asc`,
         )
         .expect(HttpStatus.OK);
 
@@ -614,7 +614,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic bla-bla`)
         .send(postInputDto)
         .expect(HttpStatus.UNAUTHORIZED);
@@ -625,7 +625,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${345}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${345}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
         .expect(HttpStatus.BAD_REQUEST);
@@ -651,7 +651,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
         .expect(HttpStatus.NOT_FOUND);
@@ -661,7 +661,7 @@ describe('Blogs controller (e2e)', () => {
       const blog = await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ title: '', content: '', shortDescription: '' })
         .expect(HttpStatus.BAD_REQUEST);
@@ -702,7 +702,7 @@ describe('Blogs controller (e2e)', () => {
       const post = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ ...post, content: getStringWithLength(1001) })
         .expect(HttpStatus.BAD_REQUEST);
@@ -728,7 +728,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH}`)
+        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
         .expect(HttpStatus.CREATED);

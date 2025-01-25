@@ -52,7 +52,7 @@ export class BlogController {
   }
 
   @Public()
-  @Get(`:id/${POSTS_API_PATH}`)
+  @Get(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async getPostsForBlog(
     @Param('id') id: Types.ObjectId,
     @Query() query: PostsQueryParams,
@@ -70,7 +70,7 @@ export class BlogController {
     return this.blogQueryRepository.getBlogById(blogId);
   }
 
-  @Post(`:id/${POSTS_API_PATH}`)
+  @Post(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async createPostForBlog(
     @Param('id') id: Types.ObjectId,
     @Body() data: PostForBlogInputDto,

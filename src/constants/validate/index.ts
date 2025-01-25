@@ -10,3 +10,4 @@ export {
   postContentLength,
   postShortDescriptionLength,
 } from './post';
+export { commentContentLength } from './comment';
