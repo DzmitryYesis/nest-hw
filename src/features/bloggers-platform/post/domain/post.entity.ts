@@ -72,7 +72,9 @@ export class Post {
   }
 
   deleteLikeOrDislike(field: 'likes' | 'dislikes', userId: string): void {
-    this.extendedLikesInfo[field].filter((item) => item.userId !== userId);
+    this.extendedLikesInfo[field] = this.extendedLikesInfo[field].filter(
+      (item) => item.userId !== userId,
+    );
   }
 
   deletePost(): void {

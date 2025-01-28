@@ -168,7 +168,7 @@ export class PostService {
     const likesArr = post.extendedLikesInfo.likes.map((l) => l.userId);
     const dislikesArr = post.extendedLikesInfo.dislikes.map((d) => d.userId);
     const likeOrDislikeInfo = {
-      userId: user.id,
+      userId: userId,
       login: user.login,
       addedAt: new Date(),
     } as BaseLikesDislikesDBData;

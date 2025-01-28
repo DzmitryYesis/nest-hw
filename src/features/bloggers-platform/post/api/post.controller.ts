@@ -48,8 +48,11 @@ export class PostController {
   }
 
   @Get(':id')
-  async getPostById(@Param('id') id: Types.ObjectId): Promise<PostViewDto> {
-    return this.postQueryRepository.getPostById(id);
+  async getPostById(
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
+  ): Promise<PostViewDto> {
+    return this.postQueryRepository.getPostById(id, req.userId);
   }
 
   @Get(`:id/${COMMENTS_API_PATH}`)

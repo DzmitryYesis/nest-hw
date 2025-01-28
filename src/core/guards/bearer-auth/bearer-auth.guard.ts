@@ -7,14 +7,10 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../../decorators';
-import { JwtService } from '../../../features/service';
 
 @Injectable()
 export class BearerAuthGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -34,13 +30,6 @@ export class BearerAuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const token = authHeader.split(' ')[1];
-    const user = await this.jwtService.verifyAccessToken(token);
-    if (user) {
-      request.userId = user.userId;
-      return true;
-    } else {
-      throw new UnauthorizedException();
-    }
+    return true;
   }
 }

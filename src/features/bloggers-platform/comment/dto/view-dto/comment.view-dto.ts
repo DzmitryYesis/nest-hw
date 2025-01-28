@@ -12,7 +12,7 @@ export class CommentViewDto {
   static mapToView(comment: CommentDocument, userId?: string): CommentViewDto {
     const dto = new CommentViewDto();
 
-    dto.id = comment.id;
+    dto.id = comment._id.toString();
     dto.content = comment.content;
     dto.createdAt = comment.createdAt;
 

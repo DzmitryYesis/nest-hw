@@ -40,7 +40,7 @@ export class PostQueryRepository {
     });
   }
 
-  async getPostById(id: ObjectId): Promise<PostViewDto> {
+  async getPostById(id: ObjectId, userId?: string): Promise<PostViewDto> {
     const post = await this.PostModel.findOne({
       _id: id,
       postStatus: { $ne: PostStatusEnum.DELETED },
@@ -50,7 +50,7 @@ export class PostQueryRepository {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
 
-    return PostViewDto.mapToView(post);
+    return PostViewDto.mapToView(post, userId);
   }
 
   async getPostsForBlog(
