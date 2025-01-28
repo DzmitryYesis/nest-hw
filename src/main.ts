@@ -5,6 +5,8 @@ import { appSetup } from './setup/app.setup';
 
 //TODO Passport js
 //TODO UseCases
+//TODO Passport strategy for middleware
+//TODO evn for all projects + for tests add url for db
 //TODO class for errors in service and repository
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
