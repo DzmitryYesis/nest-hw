@@ -71,7 +71,11 @@ export class PostTestManager {
   async createSeveralCommentsForPost(
     index: number,
     postIndex: number,
-  ): Promise<{ post: PostViewDto; comments: CommentViewDto[] }> {
+  ): Promise<{
+    post: PostViewDto;
+    comments: CommentViewDto[];
+    accessToken: string;
+  }> {
     const { accessToken } = await this.userTestManager.loggedInUser(1);
     const { post } = await this.createPost(postIndex, 1);
     const comments = [] as CommentViewDto[];
@@ -80,13 +84,15 @@ export class PostTestManager {
       await delay(50);
       const commentInputDto = this.createCommentForPostInputDto(1);
       const response = await request(this.app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send(commentInputDto);
 
       comments.unshift(response.body);
     }
 
-    return { post, comments };
+    return { post, comments, accessToken };
   }
 }

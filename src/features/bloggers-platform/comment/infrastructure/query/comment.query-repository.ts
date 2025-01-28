@@ -13,7 +13,7 @@ export class CommentQueryRepository {
     private CommentModel: CommentModelType,
   ) {}
 
-  async getCommentById(id: ObjectId): Promise<CommentViewDto> {
+  async getCommentById(id: ObjectId, userId?: string): Promise<CommentViewDto> {
     const comment = await this.CommentModel.findOne({
       _id: id,
       commentStatus: { $ne: CommentStatusEnum.DELETED },
@@ -23,7 +23,7 @@ export class CommentQueryRepository {
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    return CommentViewDto.mapToView(comment);
+    return CommentViewDto.mapToView(comment, userId);
   }
 
   async getCommentsForPost(

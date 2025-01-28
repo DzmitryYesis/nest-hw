@@ -55,7 +55,7 @@ export class PostController {
     return this.postQueryRepository.getPostById(id, req.userId);
   }
 
-  @Get(`:id/${COMMENTS_API_PATH}`)
+  @Get(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async getCommentsForPost(
     @Param('id') id: Types.ObjectId,
     @Query() query: CommentsQueryParams,
@@ -78,7 +78,7 @@ export class PostController {
   }
 
   @UseGuards(BearerAuthGuard)
-  @Post(`:id/${COMMENTS_API_PATH}`)
+  @Post(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async createCommentForPost(
     @Req() req: Request & { userId: string },
     @Param('id') id: Types.ObjectId,

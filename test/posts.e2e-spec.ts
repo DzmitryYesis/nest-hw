@@ -346,7 +346,9 @@ describe('Posts controller (e2e)', () => {
       await postTestManager.createPost(1);
 
       await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH}`)
+        .get(
+          `/${POSTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .expect(HttpStatus.NOT_FOUND);
     });
 
@@ -354,7 +356,7 @@ describe('Posts controller (e2e)', () => {
       await postTestManager.createPost(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${345}/${COMMENTS_API_PATH}`)
+        .get(`/${POSTS_API_PATH.ROOT_URL}/${345}/${COMMENTS_API_PATH.ROOT_URL}`)
         .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
@@ -377,7 +379,9 @@ describe('Posts controller (e2e)', () => {
       const { post } = await postTestManager.createPost(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .get(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -397,7 +401,9 @@ describe('Posts controller (e2e)', () => {
         await postTestManager.createSeveralCommentsForPost(1, 1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .get(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -417,7 +423,9 @@ describe('Posts controller (e2e)', () => {
         await postTestManager.createSeveralCommentsForPost(5, 1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .get(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -437,7 +445,9 @@ describe('Posts controller (e2e)', () => {
         await postTestManager.createSeveralCommentsForPost(25, 1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .get(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -457,7 +467,7 @@ describe('Posts controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}?sortBy=ert`,
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}?sortBy=ert`,
         )
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -482,7 +492,7 @@ describe('Posts controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}?sortBy=content&sortDirection=wer&pageSize=-2&pageNumber=dfg`,
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}?sortBy=content&sortDirection=wer&pageSize=-2&pageNumber=dfg`,
         )
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -516,7 +526,7 @@ describe('Posts controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}?pageSize=7&pageNumber=3`,
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}?pageSize=7&pageNumber=3`,
         )
         .expect(HttpStatus.OK);
 
@@ -538,7 +548,7 @@ describe('Posts controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}?pageSize=6&pageNumber=4&sortDirection=asc`,
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}?pageSize=6&pageNumber=4&sortDirection=asc`,
         )
         .expect(HttpStatus.OK);
 
@@ -743,7 +753,9 @@ describe('Posts controller (e2e)', () => {
       const commentInputDto = postTestManager.createCommentForPostInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer bla-bla-bla`)
         .send(commentInputDto)
         .expect(HttpStatus.UNAUTHORIZED);
@@ -754,7 +766,9 @@ describe('Posts controller (e2e)', () => {
       const { accessToken } = await userTestManager.loggedInUser(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send({ content: getStringWithLength(15) } as CommentInputDto)
         .expect(HttpStatus.BAD_REQUEST);
@@ -780,7 +794,9 @@ describe('Posts controller (e2e)', () => {
       const { accessToken } = await userTestManager.loggedInUser(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send({ content: getStringWithLength(350) } as CommentInputDto)
         .expect(HttpStatus.BAD_REQUEST);
@@ -807,7 +823,9 @@ describe('Posts controller (e2e)', () => {
       const comment = postTestManager.createCommentForPostInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send(comment)
         .expect(HttpStatus.NOT_FOUND);
@@ -834,7 +852,9 @@ describe('Posts controller (e2e)', () => {
       const comment = postTestManager.createCommentForPostInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${345}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${345}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send(comment)
         .expect(HttpStatus.BAD_REQUEST);
@@ -846,7 +866,9 @@ describe('Posts controller (e2e)', () => {
       const comment = postTestManager.createCommentForPostInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH}`)
+        .post(
+          `/${POSTS_API_PATH.ROOT_URL}/${post.id}/${COMMENTS_API_PATH.ROOT_URL}`,
+        )
         .set('authorization', `Bearer ${accessToken}`)
         .send(comment)
         .expect(HttpStatus.CREATED);

@@ -2,13 +2,14 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CommentStatusEnum } from '../../../../constants';
 import {
   BaseExtendedLikesInfoSchema,
+  BaseLikesDislikesDBData,
   BaseLikesDislikesInfo,
 } from '../../../../core/domain';
 import {
   CommentatorInfo,
   CommentatorInfoSchema,
 } from './commentator-info.schema';
-import { CreateCommentDomainDto } from '../dto';
+import { CommentInputDto, CreateCommentDomainDto } from '../dto';
 import { HydratedDocument, Model } from 'mongoose';
 
 @Schema({ timestamps: true })
@@ -53,6 +54,28 @@ export class Comment {
     };
 
     return comment as CommentDocument;
+  }
+
+  updateComment(dto: CommentInputDto): void {
+    this.content = dto.content;
+  }
+
+  addLikeOrDislike(
+    field: 'likes' | 'dislikes',
+    dto: BaseLikesDislikesDBData,
+  ): void {
+    this.likesInfo[field].push(dto);
+  }
+
+  deleteLikeOrDislike(field: 'likes' | 'dislikes', userId: string): void {
+    this.likesInfo[field] = this.likesInfo[field].filter(
+      (item) => item.userId !== userId,
+    );
+  }
+
+  deleteComment(): void {
+    this.commentStatus = CommentStatusEnum.DELETED;
+    this.deletedAt = new Date();
   }
 }
 
