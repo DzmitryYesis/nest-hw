@@ -8,6 +8,7 @@ import { appSetup } from './setup/app.setup';
 //TODO Passport strategy for middleware
 //TODO evn for all projects + for tests add url for db
 //TODO class for errors in service and repository
+//TODO try to find best practise to add refresh token to cookie
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

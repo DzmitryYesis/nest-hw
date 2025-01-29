@@ -79,10 +79,11 @@ export class UserTestManager {
     return { user, recoveryPasswordCode };
   }
 
-  //TODO add refresh token
-  async loggedInUser(
-    index: number,
-  ): Promise<{ user: UserViewDto; accessToken: string }> {
+  async loggedInUser(index: number): Promise<{
+    user: UserViewDto;
+    accessToken: string;
+    refreshToken: string | undefined;
+  }> {
     const { user, password } = await this.createUser(index);
 
     const response = await request(this.app.getHttpServer())
@@ -92,6 +93,11 @@ export class UserTestManager {
 
     const { accessToken } = response.body as LoginViewDto;
 
-    return { user, accessToken };
+    const cookies = response.headers['set-cookie'] as unknown as string[];
+    const refreshToken = cookies.find((cookie) =>
+      cookie.startsWith('refreshToken='),
+    );
+
+    return { user, accessToken, refreshToken };
   }
 }

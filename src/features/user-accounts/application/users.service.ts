@@ -205,9 +205,15 @@ export class UsersService {
       });
     }
 
-    const accessToken = await this.jwtService.createAccessJWT(user._id);
+    const deviceId = uuidV4();
 
-    return { accessToken };
+    const accessToken = await this.jwtService.createAccessJWT(user._id);
+    const { refreshToken } = await this.jwtService.createRefreshJWT(
+      deviceId,
+      user._id,
+    );
+
+    return { accessToken, refreshToken };
   }
 
   async checkIsUserUnique(field: string, value: string): Promise<boolean> {
