@@ -40,11 +40,12 @@ export class PostController {
 
   @Get()
   async getAllPosts(
+    @Req() req: Request & { userId: string },
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
 
-    return this.postQueryRepository.getAllPosts(queryParams);
+    return this.postQueryRepository.getAllPosts(queryParams, req.userId);
   }
 
   @Get(':id')
@@ -57,6 +58,7 @@ export class PostController {
 
   @Get(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async getCommentsForPost(
+    @Req() req: Request & { userId: string },
     @Param('id') id: Types.ObjectId,
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
@@ -66,6 +68,7 @@ export class PostController {
     return this.commentsQueryRepository.getCommentsForPost(
       postId!,
       queryParams,
+      req.userId,
     );
   }
 

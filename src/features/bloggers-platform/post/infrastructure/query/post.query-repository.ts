@@ -4,7 +4,7 @@ import { Post, PostModelType } from '../../domain';
 import { ObjectId } from 'mongodb';
 import { PostStatusEnum } from '../../../../../constants';
 import { PostsQueryParams, PostViewDto } from '../../dto';
-import { PaginatedViewDto } from '../../../../../core/dto';
+import { PaginatedViewDto } from '../../../../../core';
 
 @Injectable()
 export class PostQueryRepository {
@@ -15,6 +15,7 @@ export class PostQueryRepository {
 
   async getAllPosts(
     query: PostsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const filter = {
       postsStatus: { $ne: PostStatusEnum.DELETED },
@@ -30,7 +31,7 @@ export class PostQueryRepository {
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items = posts.map((post) => PostViewDto.mapToView(post));
+    const items = posts.map((post) => PostViewDto.mapToView(post, userId));
 
     return PaginatedViewDto.mapToView({
       items,
@@ -56,6 +57,7 @@ export class PostQueryRepository {
   async getPostsForBlog(
     id: string,
     query: PostsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const filter = {
       blogId: id,
@@ -72,7 +74,7 @@ export class PostQueryRepository {
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items = posts.map((post) => PostViewDto.mapToView(post));
+    const items = posts.map((post) => PostViewDto.mapToView(post, userId));
 
     return PaginatedViewDto.mapToView({
       items,

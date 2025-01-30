@@ -29,6 +29,7 @@ export class CommentQueryRepository {
   async getCommentsForPost(
     id: string,
     query: CommentsQueryParams,
+    userId?: string,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const filter = {
       postId: id,
@@ -45,7 +46,9 @@ export class CommentQueryRepository {
 
     const totalCount = await this.CommentModel.countDocuments(filter);
 
-    const items = comments.map((comment) => CommentViewDto.mapToView(comment));
+    const items = comments.map((comment) =>
+      CommentViewDto.mapToView(comment, userId),
+    );
 
     return PaginatedViewDto.mapToView({
       items,

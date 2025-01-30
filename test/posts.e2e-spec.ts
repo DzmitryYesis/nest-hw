@@ -1532,6 +1532,132 @@ describe('Posts controller (e2e)', () => {
         },
       } as PostViewDto);
     });
+
+    it('should add like from user1, user2 for post1, dislike from user2, user3 for post2, dislike from user1 and like from user3 for post3 show myStatus for auth user1: like for post1, none for post2 and dislike for post3', async () => {
+      const posts = await postTestManager.createSeveralPosts(3);
+
+      const post1 = posts[0];
+      const post2 = posts[1];
+      const post3 = posts[2];
+
+      const { accessToken: accessTokenUser1, user: user1 } =
+        await userTestManager.loggedInUser(1);
+      const { accessToken: accessTokenUser2, user: user2 } =
+        await userTestManager.loggedInUser(2);
+      const { accessToken: accessTokenUser3, user: user3 } =
+        await userTestManager.loggedInUser(3);
+
+      //like from user1, user2 for post1
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post1.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser1}`)
+        .send({ likeStatus: 'Like' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post1.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser2}`)
+        .send({ likeStatus: 'Like' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      //dislike from user2, user3 for post2
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post2.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser2}`)
+        .send({ likeStatus: 'Dislike' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post2.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser3}`)
+        .send({ likeStatus: 'Dislike' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      //dislike from user1, like from user3 for post3
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post3.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser1}`)
+        .send({ likeStatus: 'Dislike' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      await request(app.getHttpServer())
+        .put(
+          `/${POSTS_API_PATH.ROOT_URL}/${post3.id}/${POSTS_API_PATH.LIKE_STATUS}`,
+        )
+        .set('authorization', `Bearer ${accessTokenUser3}`)
+        .send({ likeStatus: 'Like' } as BaseLikeStatusInputDto)
+        .expect(HttpStatus.NO_CONTENT);
+
+      const response = await request(app.getHttpServer())
+        .get(`/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Bearer ${accessTokenUser1}`)
+        .expect(HttpStatus.OK);
+
+      console.log(response.body);
+
+      expect(response.body).toStrictEqual({
+        pagesCount: 1,
+        page: 1,
+        pageSize: 10,
+        totalCount: 3,
+        items: [
+          {
+            ...post1,
+            extendedLikesInfo: {
+              likesCount: 2,
+              dislikesCount: 0,
+              myStatus: UserLikeStatus.LIKE,
+              newestLikes: [
+                {
+                  userId: user2.id,
+                  login: user2.login,
+                  addedAt: expect.any(String),
+                },
+                {
+                  userId: user1.id,
+                  login: user1.login,
+                  addedAt: expect.any(String),
+                },
+              ],
+            },
+          } as PostViewDto,
+          {
+            ...post2,
+            extendedLikesInfo: {
+              likesCount: 0,
+              dislikesCount: 2,
+              myStatus: UserLikeStatus.NONE,
+              newestLikes: [],
+            },
+          } as PostViewDto,
+          {
+            ...post3,
+            extendedLikesInfo: {
+              likesCount: 1,
+              dislikesCount: 1,
+              myStatus: UserLikeStatus.DISLIKE,
+              newestLikes: [
+                {
+                  userId: user3.id,
+                  login: user3.login,
+                  addedAt: expect.any(String),
+                },
+              ],
+            },
+          } as PostViewDto,
+        ],
+      });
+    });
   });
 
   //DELETE /posts/:id

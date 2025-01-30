@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { BlogService } from '../application';
@@ -54,13 +55,18 @@ export class BlogController {
   @Public()
   @Get(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async getPostsForBlog(
+    @Req() req: Request & { userId: string },
     @Param('id') id: Types.ObjectId,
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
     const blogId = await this.blogService.getBlogById(id);
 
-    return this.postQueryRepository.getPostsForBlog(blogId!, queryParams);
+    return this.postQueryRepository.getPostsForBlog(
+      blogId!,
+      queryParams,
+      req.userId,
+    );
   }
 
   @Post()
