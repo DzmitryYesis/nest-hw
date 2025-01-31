@@ -181,32 +181,32 @@ describe('Auth controller (e2e)', () => {
       expect(hasRefreshToken).toBe(true);
     });
 
-    //TODO add test for 429 error status
-    /*it('should return work normal after 5 login request one by one', async () => {
-      const { user, password } = await createdUser(1);
+    it('should return work normal after 5 login request one by one', async () => {
+      const { user, password } = await userTestManager.createUser(1);
 
       for (let i = 1; i < 6; i++) {
-        await req
-          .post(`${SETTINGS.PATH.AUTH}/login`)
+        await request(app.getHttpServer())
+          .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGIN}`)
           .send({ loginOrEmail: user.login, password })
-          .expect(HttpStatusCodeEnum.OK_200);
+          .expect(HttpStatus.OK);
       }
     });
 
-    it('should return error TY_MANY_REQUEST after 6 login one by one', async () => {
-      const { user, password } = await createdUser(1);
+    //TODO add test for 429 error status
+    /*it('should return error TY_MANY_REQUEST after 6 login one by one', async () => {
+      const { user, password } = await userTestManager.createUser(1);
 
       for (let i = 1; i < 6; i++) {
-        await req
-          .post(`${SETTINGS.PATH.AUTH}/login`)
+        await request(app.getHttpServer())
+          .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGIN}`)
           .send({ loginOrEmail: user.login, password })
-          .expect(HttpStatusCodeEnum.OK_200);
+          .expect(HttpStatus.OK);
       }
 
-      await req
-        .post(`${SETTINGS.PATH.AUTH}/login`)
+      await request(app.getHttpServer())
+        .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGIN}`)
         .send({ loginOrEmail: user.login, password })
-        .expect(HttpStatusCodeEnum.TO_MANY_REQUESTS);
+        .expect(HttpStatus.TOO_MANY_REQUESTS);
     });*/
   });
 
