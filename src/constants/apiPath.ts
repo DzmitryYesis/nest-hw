@@ -19,6 +19,8 @@ export const AUTH_API_PATH = {
   PASSWORD_RECOVERY: 'password-recovery',
   NEW_PASSWORD: 'new-password',
   LOGIN: 'login',
+  REFRESH_TOKEN: 'refresh-token',
+  LOGOUT: 'logout',
   ME: 'me',
 };
 

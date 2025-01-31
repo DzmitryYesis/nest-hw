@@ -7,6 +7,7 @@ import {
   ErrorMessage,
   mockMailService,
   invalidCode,
+  invalidRefreshToken,
 } from './helpers';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
@@ -56,6 +57,7 @@ describe('Auth controller (e2e)', () => {
     await app.close();
   });
 
+  //GET /auth/me
   describe('Get user info', () => {
     it('should return response with UNAUTHORIZED_401 error', async () => {
       await userTestManager.loggedInUser(1);
@@ -91,6 +93,7 @@ describe('Auth controller (e2e)', () => {
     });
   });
 
+  //POST /auth/login
   describe('Login user', () => {
     it('should return response with error BAD_REQUEST_400 for filed loginOrEmail', async () => {
       const { password } = await userTestManager.createUser(1);
@@ -210,6 +213,7 @@ describe('Auth controller (e2e)', () => {
     });*/
   });
 
+  //POST /auth/registration
   describe('Registration user', () => {
     it('should return response with status BAD_REQUEST_400 and validation errors for fields login, password, email', async () => {
       const response = await request(app.getHttpServer())
@@ -371,6 +375,7 @@ describe('Auth controller (e2e)', () => {
     });*/
   });
 
+  //POST /auth/registration-confirmation
   describe('Registration confirmation user', () => {
     beforeEach(async () => {
       mockMailService.sendEmailWithConfirmationCode.mockClear();
@@ -508,6 +513,7 @@ describe('Auth controller (e2e)', () => {
     });*/
   });
 
+  //POST /aut/registration-email-resending
   describe('Resend confirmation code', () => {
     beforeEach(async () => {
       mockMailService.sendEmailWithConfirmationCode.mockClear();
@@ -677,6 +683,7 @@ describe('Auth controller (e2e)', () => {
     });*/
   });
 
+  //POST /auth/password-recovery
   describe('Recovery password', () => {
     beforeEach(async () => {
       mockMailService.sendEmailWithRecoveryPasswordCode.mockClear();
@@ -754,6 +761,7 @@ describe('Auth controller (e2e)', () => {
     });*/
   });
 
+  //POST /auth/new-password
   describe('New password', () => {
     beforeEach(async () => {
       mockMailService.sendEmailWithRecoveryPasswordCode.mockClear();
@@ -886,67 +894,85 @@ describe('Auth controller (e2e)', () => {
         .expect(HttpStatusCodeEnum.TO_MANY_REQUESTS);
     });*/
   });
-});
 
-/*
-it('should return response NOT_AUTH_401 error', async () => {
-  await loggedInUser(1);
+  //POST /auth/refresh-token
+  describe('Refresh token', () => {
+    it('should return response NOT_AUTH_401 error', async () => {
+      await userTestManager.loggedInUser(1);
 
-  await req
-    .post(`${SETTINGS.PATH.AUTH}/refresh-token`)
-    .set('Cookie', invalidRefreshToken)
-    .expect(HttpStatusCodeEnum.NOT_AUTH_401)
-})
+      await request(app.getHttpServer())
+        .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.REFRESH_TOKEN}`)
+        .set('Cookie', invalidRefreshToken)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
 
-//TODO problem with iat for refresh token
-/!*it('should return response new accessToken and refreshToken', async () => {
-    const {accessToken, refreshTokenCookie} = await loggedInUser(1);
+    /*//TODO problem with iat for refresh token
+    it('should return response new accessToken and refreshToken', async () => {
+      const { accessToken, refreshTokenCookie } = await loggedInUser(1);
 
-    console.log(refreshTokenCookie)
-    const {iat: iatAccessToken} = await jwtService.decodeAccessToken(accessToken);
-    const {iat: iatRefreshToken} = await jwtService.decodeRefreshToken(refreshTokenCookie!.replace('refreshToken=', ''));
+      console.log(refreshTokenCookie);
+      const { iat: iatAccessToken } =
+        await jwtService.decodeAccessToken(accessToken);
+      const { iat: iatRefreshToken } = await jwtService.decodeRefreshToken(
+        refreshTokenCookie!.replace('refreshToken=', ''),
+      );
 
-    await sleep(3000);
+      await sleep(3000);
 
-    const res = await req
+      const res = await req
         .post(`${SETTINGS.PATH.AUTH}/refresh-token`)
         .set('Cookie', refreshTokenCookie!)
-        .expect(HttpStatusCodeEnum.OK_200)
+        .expect(HttpStatusCodeEnum.OK_200);
 
-    console.log(res.body)
+      console.log(res.body);
 
-    expect(res.body).toStrictEqual({accessToken: expect.any(String)} as TLoginUser);
+      expect(res.body).toStrictEqual({
+        accessToken: expect.any(String),
+      } as TLoginUser);
 
-    const cookies = res.headers['set-cookie'] as unknown as string[];
-    const newRefreshTokenCookie = cookies.find(cookie => cookie.startsWith('refreshToken='));
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      const newRefreshTokenCookie = cookies.find((cookie) =>
+        cookie.startsWith('refreshToken='),
+      );
 
-    const {iat: newIatAccessToken} = await jwtService.decodeAccessToken(res.body.accessToken);
-    const {iat: newIatRefreshToken} = await jwtService.decodeRefreshToken(newRefreshTokenCookie!.replace('refreshToken=', ''));
+      const { iat: newIatAccessToken } = await jwtService.decodeAccessToken(
+        res.body.accessToken,
+      );
+      const { iat: newIatRefreshToken } = await jwtService.decodeRefreshToken(
+        newRefreshTokenCookie!.replace('refreshToken=', ''),
+      );
 
-    expect(newRefreshTokenCookie).toStrictEqual(expect.any(String));
-    expect(newIatAccessToken).not.toEqual(iatAccessToken);
-    expect(newIatRefreshToken).not.toEqual(iatRefreshToken);
-})*!/
+      expect(newRefreshTokenCookie).toStrictEqual(expect.any(String));
+      expect(newIatAccessToken).not.toEqual(iatAccessToken);
+      expect(newIatRefreshToken).not.toEqual(iatRefreshToken);
+    });*/
+  });
 
-it('should return response NOT_AUTH_401 error', async () => {
-  await loggedInUser(1);
+  //POST /auth/logout
+  describe('Logout user', () => {
+    it('should return response NOT_AUTH_401 error', async () => {
+      await userTestManager.loggedInUser(1);
 
-  await req
-    .post(`${SETTINGS.PATH.AUTH}/logout`)
-    .set('Cookie', invalidRefreshToken)
-    .expect(HttpStatusCodeEnum.NOT_AUTH_401)
-})
+      await request(app.getHttpServer())
+        .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGOUT}`)
+        .set('Cookie', invalidRefreshToken)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
 
-it('should return response NO_CONTENT_204 and without refreshToken', async () => {
-  const {refreshTokenCookie} = await loggedInUser(1);
+    it('should return response NO_CONTENT_204 and without refreshToken', async () => {
+      const { refreshToken } = await userTestManager.loggedInUser(1);
 
-  const res = await req
-    .post(`${SETTINGS.PATH.AUTH}/logout`)
-    .set('Cookie', refreshTokenCookie!)
-    .expect(HttpStatusCodeEnum.NO_CONTENT_204)
+      const response = await request(app.getHttpServer())
+        .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGOUT}`)
+        .set('Cookie', refreshToken!)
+        .expect(HttpStatus.NO_CONTENT);
 
-  const cookie = res.headers['set-cookie'] as unknown as string[] || []
-  const clearedCookie = cookie.find((cookie) => cookie.startsWith('refreshToken='));
-  expect(clearedCookie).toBeUndefined();
-})
-*/
+      const cookie =
+        (response.headers['set-cookie'] as unknown as string[]) || [];
+      const clearedCookie = cookie.find((cookie) =>
+        cookie.startsWith('refreshToken='),
+      );
+      expect(clearedCookie).toBeUndefined();
+    });
+  });
+});

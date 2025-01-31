@@ -10,6 +10,10 @@ import {
 } from '../bloggers-platform';
 import { User, UserModelType } from '../user-accounts';
 import { DELETE_ALL_API_PATH } from '../../constants';
+import {
+  Session,
+  SessionModelType,
+} from '../user-accounts/domain/session.entity';
 
 @Controller(DELETE_ALL_API_PATH.ROOT_URL)
 export class TestingController {
@@ -22,6 +26,8 @@ export class TestingController {
     private PostModel: PostModelType,
     @InjectModel(Comment.name)
     private CommentModel: CommentModelType,
+    @InjectModel(Session.name)
+    private SessionModel: SessionModelType,
   ) {}
 
   @Delete(DELETE_ALL_API_PATH.DELETE_ALL_DATA)
@@ -31,6 +37,7 @@ export class TestingController {
     await this.BlogModel.deleteMany({});
     await this.PostModel.deleteMany({});
     await this.CommentModel.deleteMany({});
+    await this.SessionModel.deleteMany({});
     return;
   }
 }
