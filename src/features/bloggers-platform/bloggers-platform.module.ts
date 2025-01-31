@@ -26,6 +26,7 @@ import {
 } from './comment';
 import { UtilitiesApplicationModule } from '../service';
 import { UserAccountsModule } from '../user-accounts';
+import { BlogExistsConstraint } from './post/validators/blog-exist.validator';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { UserAccountsModule } from '../user-accounts';
   ],
   controllers: [BlogController, PostController, CommentController],
   providers: [
+    BlogExistsConstraint,
     BlogService,
     BlogRepository,
     BlogQueryRepository,

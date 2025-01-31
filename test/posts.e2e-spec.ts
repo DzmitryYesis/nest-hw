@@ -578,14 +578,36 @@ describe('Posts controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('should return response with status NOT_FOUND and for invalid blogId', async () => {
+    it('should return response with status BAD_REQUEST for invalid blogId', async () => {
       const postInputDto = postTestManager.createPostInputDto(1, invalidId);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      response.body.errorsMessages.forEach((error: ErrorMessage) => {
+        expect(error).toHaveProperty('field');
+        expect(error).toHaveProperty('message');
+        expect(typeof error.field).toBe('string');
+        expect(typeof error.message).toBe('string');
+      });
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'blogId',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response with status BAD_REQUEST_400 and error for fields title, content, shortDescription, blogId', async () => {
@@ -984,18 +1006,40 @@ describe('Posts controller (e2e)', () => {
       );
     });
 
-    it('should return response with status NOT_FOUND for invalid blogId', async () => {
+    it('should return response with status BAD_REQUEST for invalid blogId', async () => {
       const { post } = await postTestManager.createPost(1);
       const postInputDtoForUpdate = postTestManager.createPostInputDto(
         2,
         invalidId,
       );
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .put(`/${POSTS_API_PATH.ROOT_URL}/${post.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDtoForUpdate)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      response.body.errorsMessages.forEach((error: ErrorMessage) => {
+        expect(error).toHaveProperty('field');
+        expect(error).toHaveProperty('message');
+        expect(typeof error.field).toBe('string');
+        expect(typeof error.message).toBe('string');
+      });
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'blogId',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response with status BAD_REQUEST_400 and error for fields blogId', async () => {
