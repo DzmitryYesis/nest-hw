@@ -1,6 +1,13 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Blog, BlogModelType, Post, PostModelType } from '../bloggers-platform';
+import {
+  Blog,
+  BlogModelType,
+  Comment,
+  CommentModelType,
+  Post,
+  PostModelType,
+} from '../bloggers-platform';
 import { User, UserModelType } from '../user-accounts';
 import { DELETE_ALL_API_PATH } from '../../constants';
 
@@ -13,6 +20,8 @@ export class TestingController {
     private BlogModel: BlogModelType,
     @InjectModel(Post.name)
     private PostModel: PostModelType,
+    @InjectModel(Comment.name)
+    private CommentModel: CommentModelType,
   ) {}
 
   @Delete(DELETE_ALL_API_PATH.DELETE_ALL_DATA)
@@ -21,6 +30,7 @@ export class TestingController {
     await this.UserModel.deleteMany({});
     await this.BlogModel.deleteMany({});
     await this.PostModel.deleteMany({});
+    await this.CommentModel.deleteMany({});
     return;
   }
 }

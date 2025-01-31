@@ -1,5 +1,11 @@
 export * from './entitiesStatus';
-export * from './querySortBy';
+export {
+  BlogsSortByEnum,
+  UsersSortByEnum,
+  CommentsSortByEnum,
+  PostsSortByEnum,
+  SortDirectionEnum,
+} from './querySortBy';
 export * from './userLikeStatus';
 export {
   passwordLength,

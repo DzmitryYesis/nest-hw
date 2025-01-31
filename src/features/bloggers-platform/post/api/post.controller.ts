@@ -9,19 +9,28 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { PostService } from '../application';
 import { PostQueryRepository } from '../infrastructure';
 import { PostInputDto, PostsQueryParams, PostViewDto } from '../dto';
-import { PaginatedViewDto } from '../../../../core';
-import { ObjectId } from 'mongodb';
 import {
+  BasicAuthGuard,
+  BearerAuthGuard,
+  PaginatedViewDto,
+} from '../../../../core';
+import {
+  CommentInputDto,
   CommentQueryRepository,
   CommentsQueryParams,
   CommentViewDto,
 } from '../../comment';
+import { Types } from 'mongoose';
+import { COMMENTS_API_PATH, POSTS_API_PATH } from '../../../../constants';
+import { BaseLikeStatusInputDto } from '../../../../core/dto';
 
-@Controller('posts')
+@Controller(POSTS_API_PATH.ROOT_URL)
 export class PostController {
   constructor(
     private postService: PostService,
@@ -31,21 +40,26 @@ export class PostController {
 
   @Get()
   async getAllPosts(
+    @Req() req: Request & { userId: string },
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
 
-    return this.postQueryRepository.getAllPosts(queryParams);
+    return this.postQueryRepository.getAllPosts(queryParams, req.userId);
   }
 
   @Get(':id')
-  async getPostById(@Param('id') id: string): Promise<PostViewDto> {
-    return this.postQueryRepository.getPostById(new ObjectId(id));
+  async getPostById(
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
+  ): Promise<PostViewDto> {
+    return this.postQueryRepository.getPostById(id, req.userId);
   }
 
-  @Get(':id/comments')
+  @Get(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async getCommentsForPost(
-    @Param('id') id: string,
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
@@ -54,9 +68,11 @@ export class PostController {
     return this.commentsQueryRepository.getCommentsForPost(
       postId!,
       queryParams,
+      req.userId,
     );
   }
 
+  @UseGuards(BasicAuthGuard)
   @Post()
   async createPost(@Body() data: PostInputDto): Promise<PostViewDto> {
     const postId = await this.postService.createPost(data);
@@ -64,18 +80,47 @@ export class PostController {
     return this.postQueryRepository.getPostById(postId!);
   }
 
+  @UseGuards(BearerAuthGuard)
+  @Post(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
+  async createCommentForPost(
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
+    @Body() date: CommentInputDto,
+  ): Promise<CommentViewDto> {
+    const commentId = await this.postService.createCommentForPost(
+      id,
+      req.userId,
+      date,
+    );
+
+    return this.commentsQueryRepository.getCommentById(commentId);
+  }
+
+  @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updatePost(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: PostInputDto,
   ): Promise<void> {
     return this.postService.updatePost(id, data);
   }
 
+  @UseGuards(BearerAuthGuard)
+  @Put(`:id/${POSTS_API_PATH.LIKE_STATUS}`)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changeLikeStatus(
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
+    @Body() data: BaseLikeStatusInputDto,
+  ): Promise<void> {
+    return this.postService.likeStatus(req.userId, id, data);
+  }
+
+  @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePost(@Param('id') id: string): Promise<void> {
+  async deletePost(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.postService.deletePostById(id);
   }
 }

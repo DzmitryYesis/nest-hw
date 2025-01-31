@@ -5,8 +5,10 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UsersService } from '../application';
 import { AUTH_API_PATH } from '../../../constants';
 import {
@@ -16,11 +18,11 @@ import {
   PasswordRecoveryInputDto,
   ChangePasswordInputDto,
   LoginInputDto,
-  LoginViewDto,
   UserInfoViewDto,
 } from '../dto';
 import { ExtractUserFromRequest, BearerAuthGuard } from '../../../core';
 import { UsersQueryRepository } from '../infrastructure';
+import { SETTINGS } from '../../../settings';
 
 @Controller(AUTH_API_PATH.ROOT_URL)
 export class AuthController {
@@ -78,7 +80,17 @@ export class AuthController {
 
   @Post(AUTH_API_PATH.LOGIN)
   @HttpCode(HttpStatus.OK)
-  async login(@Body() data: LoginInputDto): Promise<LoginViewDto> {
-    return this.usersService.login(data);
+  async login(
+    @Body() data: LoginInputDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { accessToken, refreshToken } = await this.usersService.login(data);
+
+    res.cookie(SETTINGS.REFRESH_TOKEN_NAME, refreshToken, {
+      httpOnly: true,
+      secure: true,
+    });
+
+    res.send({ accessToken: accessToken });
   }
 }

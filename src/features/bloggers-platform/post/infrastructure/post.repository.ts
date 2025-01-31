@@ -11,9 +11,9 @@ export class PostRepository {
     private PostModel: PostModelType,
   ) {}
 
-  async findPostById(id: string): Promise<PostDocument | null> {
+  async findPostById(id: ObjectId): Promise<PostDocument | null> {
     return this.PostModel.findOne({
-      _id: new ObjectId(id),
+      _id: id,
       postStatus: { $ne: PostStatusEnum.DELETED },
     });
   }

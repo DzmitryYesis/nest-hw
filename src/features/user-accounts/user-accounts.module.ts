@@ -14,6 +14,6 @@ import { UtilitiesApplicationModule } from '../service';
   ],
   controllers: [UsersController, AuthController],
   providers: [UsersService, UsersRepository, UsersQueryRepository],
-  exports: [MongooseModule],
+  exports: [MongooseModule, UsersRepository],
 })
 export class UserAccountsModule {}

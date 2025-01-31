@@ -4,8 +4,11 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ObjectIdValidationTransformationPipe } from '../core';
+import { useContainer } from 'class-validator';
+import { AppModule } from '../app.module';
 
 export function pipesSetup(app: INestApplication) {
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
   app.useGlobalPipes(
     new ObjectIdValidationTransformationPipe(),
     new ValidationPipe({

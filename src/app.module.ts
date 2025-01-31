@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TestingModule } from './features/testing';
 import { BloggersPlatformModule } from './features/bloggers-platform';
 import { UserAccountsModule } from './features/user-accounts';
 import { UtilitiesApplicationModule } from './features/service';
 import { SETTINGS } from './settings';
+import { UserIdMiddleware } from './core';
 
 //TODO path for DB put into env or config module
 @Module({
@@ -17,5 +18,10 @@ import { SETTINGS } from './settings';
     TestingModule,
     UtilitiesApplicationModule,
   ],
+  providers: [UtilitiesApplicationModule],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(UserIdMiddleware).forRoutes('*');
+  }
+}

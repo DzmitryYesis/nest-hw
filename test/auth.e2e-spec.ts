@@ -158,7 +158,6 @@ describe('Auth controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    //TODO add logic for refresh token
     it('should return response with accessToken in body and refreshToken in cookie', async () => {
       const { user, password } = await userTestManager.createUser(1);
 
@@ -173,13 +172,13 @@ describe('Auth controller (e2e)', () => {
         accessToken: expect.any(String),
       } as LoginViewDto);
 
-      /*const cookies = res.headers['set-cookie'] as unknown as string[];
+      const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(cookies).toBeDefined();
 
       const hasRefreshToken = cookies.some((cookie) =>
         cookie.startsWith('refreshToken='),
       );
-      expect(hasRefreshToken).toBe(true);*/
+      expect(hasRefreshToken).toBe(true);
     });
 
     //TODO add test for 429 error status

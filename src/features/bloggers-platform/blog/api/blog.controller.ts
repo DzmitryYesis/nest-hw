@@ -9,10 +9,12 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { BlogService } from '../application';
 import { BlogQueryRepository } from '../infrastructure';
-import { PaginatedViewDto } from '../../../../core/dto';
+import { BasicAuthGuard, PaginatedViewDto } from '../../../../core';
 import {
   BlogInputDto,
   BlogsQueryParams,
@@ -21,8 +23,12 @@ import {
 } from '../dto';
 import { ObjectId } from 'mongodb';
 import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
+import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
+import { Types } from 'mongoose';
+import { Public } from '../../../../core/decorators';
 
-@Controller('blogs')
+@UseGuards(BasicAuthGuard)
+@Controller(BLOGS_API_PATH)
 export class BlogController {
   constructor(
     private blogService: BlogService,
@@ -30,6 +36,7 @@ export class BlogController {
     private postQueryRepository: PostQueryRepository,
   ) {}
 
+  @Public()
   @Get()
   async getAllBlogs(
     @Query() query: BlogsQueryParams,
@@ -39,20 +46,27 @@ export class BlogController {
     return this.blogQueryRepository.getAllBlogs(queryParams);
   }
 
+  @Public()
   @Get(':id')
-  async getBlogById(@Param('id') id: string): Promise<BlogViewDto> {
+  async getBlogById(@Param('id') id: Types.ObjectId): Promise<BlogViewDto> {
     return this.blogQueryRepository.getBlogById(new ObjectId(id));
   }
 
-  @Get(':id/posts')
+  @Public()
+  @Get(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async getPostsForBlog(
-    @Param('id') id: string,
+    @Req() req: Request & { userId: string },
+    @Param('id') id: Types.ObjectId,
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
     const blogId = await this.blogService.getBlogById(id);
 
-    return this.postQueryRepository.getPostsForBlog(blogId!, queryParams);
+    return this.postQueryRepository.getPostsForBlog(
+      blogId!,
+      queryParams,
+      req.userId,
+    );
   }
 
   @Post()
@@ -62,9 +76,9 @@ export class BlogController {
     return this.blogQueryRepository.getBlogById(blogId);
   }
 
-  @Post(':id/posts')
+  @Post(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async createPostForBlog(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: PostForBlogInputDto,
   ): Promise<PostViewDto> {
     const postId = await this.blogService.createPostForBlog(id, data);
@@ -75,7 +89,7 @@ export class BlogController {
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
-    @Param('id') id: string,
+    @Param('id') id: Types.ObjectId,
     @Body() data: BlogInputDto,
   ): Promise<void> {
     return this.blogService.updateBlog(id, data);
@@ -83,7 +97,7 @@ export class BlogController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBlog(@Param('id') id: string): Promise<void> {
+  async deleteBlog(@Param('id') id: Types.ObjectId): Promise<void> {
     return this.blogService.deleteBlogById(id);
   }
 }
