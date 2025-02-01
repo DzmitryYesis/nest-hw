@@ -100,4 +100,28 @@ export class UserTestManager {
 
     return { user, accessToken, refreshToken };
   }
+
+  async loggedInWithDevice(
+    loginOrEmail: string,
+    password: string,
+    deviceName: string = 'Default device',
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string | undefined;
+  }> {
+    const response = await request(this.app.getHttpServer())
+      .post(`/${AUTH_API_PATH.ROOT_URL}/${AUTH_API_PATH.LOGIN}`)
+      .set('User-Agent', deviceName)
+      .send({ loginOrEmail, password } as LoginInputDto)
+      .expect(HttpStatus.OK);
+
+    const { accessToken } = response.body as LoginViewDto;
+
+    const cookies = response.headers['set-cookie'] as unknown as string[];
+    const refreshToken = cookies.find((cookie) =>
+      cookie.startsWith('refreshToken='),
+    );
+
+    return { accessToken, refreshToken };
+  }
 }

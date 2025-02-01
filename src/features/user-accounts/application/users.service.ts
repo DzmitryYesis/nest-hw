@@ -22,9 +22,11 @@ import {
 } from '../../service';
 import { Session, SessionModelType } from '../domain/session.entity';
 import { SessionsRepository } from '../infrastructure/sessions.repository';
+import { SETTINGS } from '../../../settings';
 
 //TODO create auth.service
 //TODO create class for 400 error
+//TODO refactoring the same logic for checkin refresh token expire time
 @Injectable()
 export class UsersService {
   constructor(
@@ -247,6 +249,19 @@ export class UsersService {
 
     if (!session) {
       throw new UnauthorizedException();
+    }
+
+    const isRefreshTokenExpired = await this.jwtService.isTokenExpired(
+      refreshToken,
+      SETTINGS.JWT_REFRESH_TOKEN_SECRET,
+    );
+
+    if (isRefreshTokenExpired) {
+      session.deleteSession();
+
+      await this.sessionsRepository.save(session);
+
+      throw new UnauthorizedException('Refresh token is missing');
     }
 
     session.deleteSession();

@@ -25,7 +25,28 @@ export class SessionsRepository {
     });
   }
 
+  async findSessionByDeviceId(
+    deviceId: string,
+  ): Promise<SessionDocument | null> {
+    return this.SessionModel.findOne({
+      deviceId,
+      sessionStatus: { $ne: SessionStatusEnum.DELETED },
+    });
+  }
+
   async save(session: SessionDocument) {
     await session.save();
+  }
+
+  async deleteSessionsExcludeCurrent(
+    deviceId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const result = await this.SessionModel.deleteMany({
+      userId,
+      deviceId: { $ne: deviceId },
+    });
+
+    return result.deletedCount > 0;
   }
 }

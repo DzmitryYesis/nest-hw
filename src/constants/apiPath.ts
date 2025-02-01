@@ -24,6 +24,11 @@ export const AUTH_API_PATH = {
   ME: 'me',
 };
 
+export const SECURITY_API_PATH = {
+  ROOT_URL: 'security',
+  DEVICES: 'devices',
+};
+
 export const DELETE_ALL_API_PATH = {
   ROOT_URL: 'testing',
   DELETE_ALL_DATA: 'all-data',
