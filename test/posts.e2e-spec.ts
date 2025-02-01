@@ -1097,6 +1097,7 @@ describe('Posts controller (e2e)', () => {
     });
   });
 
+  //PUT /posts/:id/like-status
   describe('Change like info for post', () => {
     it('should return response with error NOT_AUTH for like post request', async () => {
       const { post } = await postTestManager.createPost(1);

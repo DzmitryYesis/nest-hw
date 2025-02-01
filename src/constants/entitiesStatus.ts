@@ -17,3 +17,8 @@ export enum CommentStatusEnum {
   ACTIVE = 'ACTIVE',
   DELETED = 'DELETED',
 }
+
+export enum SessionStatusEnum {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}

@@ -20,15 +20,22 @@ import {
   EmailNotificationService,
   JwtService,
 } from '../../service';
+import { Session, SessionModelType } from '../domain/session.entity';
+import { SessionsRepository } from '../infrastructure/sessions.repository';
+import { SETTINGS } from '../../../settings';
 
 //TODO create auth.service
 //TODO create class for 400 error
+//TODO refactoring the same logic for checkin refresh token expire time
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name)
     private UserModel: UserModelType,
+    @InjectModel(Session.name)
+    private SessionModel: SessionModelType,
     private usersRepository: UsersRepository,
+    private sessionsRepository: SessionsRepository,
     private cryptoService: CryptoService,
     private emailNotificationService: EmailNotificationService,
     private jwtService: JwtService,
@@ -173,7 +180,11 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
-  async login(data: LoginInputDto): Promise<LoginViewDto> {
+  async login(
+    data: LoginInputDto,
+    ip: string,
+    device: string,
+  ): Promise<LoginViewDto> {
     const user = await this.usersRepository.findUserByLoginOrEmail(
       data.loginOrEmail,
     );
@@ -208,12 +219,54 @@ export class UsersService {
     const deviceId = uuidV4();
 
     const accessToken = await this.jwtService.createAccessJWT(user._id);
-    const { refreshToken } = await this.jwtService.createRefreshJWT(
+    const { refreshToken, exp, iat } = await this.jwtService.createRefreshJWT(
       deviceId,
       user._id,
     );
 
+    const session = this.SessionModel.createInstance({
+      iat,
+      exp,
+      deviceId,
+      deviceName: device || 'Unknown device',
+      ip,
+      userId: user._id.toString(),
+    });
+
+    await this.sessionsRepository.save(session);
+
     return { accessToken, refreshToken };
+  }
+
+  async logout(refreshToken: string) {
+    const { deviceId, iat } =
+      await this.jwtService.decodeRefreshToken(refreshToken);
+
+    const session = await this.sessionsRepository.findSessionByDeviceIdAndIat(
+      deviceId,
+      iat,
+    );
+
+    if (!session) {
+      throw new UnauthorizedException();
+    }
+
+    const isRefreshTokenExpired = await this.jwtService.isTokenExpired(
+      refreshToken,
+      SETTINGS.JWT_REFRESH_TOKEN_SECRET,
+    );
+
+    if (isRefreshTokenExpired) {
+      session.deleteSession();
+
+      await this.sessionsRepository.save(session);
+
+      throw new UnauthorizedException('Refresh token is missing');
+    }
+
+    session.deleteSession();
+
+    await this.sessionsRepository.save(session);
   }
 
   async checkIsUserUnique(field: string, value: string): Promise<boolean> {
