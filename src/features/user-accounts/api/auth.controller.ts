@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { UsersService } from '../application';
 import { AUTH_API_PATH } from '../../../constants';
 import {
   UserConfirmationInputDto,
@@ -24,17 +23,24 @@ import {
 import { ExtractUserFromRequest, BearerAuthGuard } from '../../../core';
 import { UsersQueryRepository } from '../infrastructure';
 import { SETTINGS } from '../../../settings';
-//import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
-import { SessionsService } from '../application/sessions.service';
+//import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler'
 import { RefreshAuthGuard } from '../../../core/guards/refresh-guard/refresh-token.guard';
+import { CommandBus } from '@nestjs/cqrs';
+import { CreateUserCommand } from '../application/use-cases/create-user.use-case';
+import { ConfirmUserCommand } from '../application/use-cases/confirm-user.use-case';
+import { ResendConfirmationCodeCommand } from '../application/use-cases/resend-confirmation-code.use-case';
+import { PasswordRecoveryCommand } from '../application/use-cases/password-recovery.use-case';
+import { ChangePasswordCommand } from '../application/use-cases/change-password.use-case';
+import { LoginCommand } from '../application/use-cases/login.use-case';
+import { LogoutCommand } from '../application/use-cases/logout.use-case';
+import { UpdateTokensCommand } from '../application/use-cases/update-tokens.use-case';
 
 //TODO delete for e2e tests
 //@UseGuards(ThrottlerGuard)
 @Controller(AUTH_API_PATH.ROOT_URL)
 export class AuthController {
   constructor(
-    private usersService: UsersService,
-    private sessionsService: SessionsService,
+    private commandBus: CommandBus,
     private usersQueryRepository: UsersQueryRepository,
   ) {}
 
@@ -51,10 +57,9 @@ export class AuthController {
   @Post(AUTH_API_PATH.REGISTRATION)
   @HttpCode(HttpStatus.NO_CONTENT)
   async registeredUser(@Body() data: UserInputDto): Promise<void> {
-    await this.usersService.checkIsUserUnique('login', data.login);
-    await this.usersService.checkIsUserUnique('email', data.email);
-
-    await this.usersService.createUser({ ...data, isAdmin: false });
+    await this.commandBus.execute(
+      new CreateUserCommand({ ...data, isAdmin: false }),
+    );
   }
 
   @Post(AUTH_API_PATH.REGISTRATION_CONFIRMATION)
@@ -62,7 +67,7 @@ export class AuthController {
   async confirmUserRegistration(
     @Body() data: UserConfirmationInputDto,
   ): Promise<void> {
-    return this.usersService.confirmUser(data.code);
+    return await this.commandBus.execute(new ConfirmUserCommand(data.code));
   }
 
   @Post(AUTH_API_PATH.REGISTRATION_EMAIL_RESENDING)
@@ -70,7 +75,9 @@ export class AuthController {
   async resendConfirmationCode(
     @Body() data: ResendConfirmationCodeInputDto,
   ): Promise<void> {
-    return this.usersService.resendConfirmationCode(data.email);
+    return await this.commandBus.execute(
+      new ResendConfirmationCodeCommand(data.email),
+    );
   }
 
   @Post(AUTH_API_PATH.PASSWORD_RECOVERY)
@@ -78,13 +85,15 @@ export class AuthController {
   async passwordRecovery(
     @Body() data: PasswordRecoveryInputDto,
   ): Promise<void> {
-    return this.usersService.passwordRecovery(data.email);
+    return await this.commandBus.execute(
+      new PasswordRecoveryCommand(data.email),
+    );
   }
 
   @Post(AUTH_API_PATH.NEW_PASSWORD)
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(@Body() data: ChangePasswordInputDto): Promise<void> {
-    return this.usersService.changePassword(data);
+    return await this.commandBus.execute(new ChangePasswordCommand(data));
   }
 
   @Post(AUTH_API_PATH.LOGIN)
@@ -94,10 +103,8 @@ export class AuthController {
     @Body() data: LoginInputDto,
     @Res() res: Response,
   ): Promise<void> {
-    const { accessToken, refreshToken } = await this.usersService.login(
-      data,
-      req.ip!,
-      req.headers['user-agent']!,
+    const { accessToken, refreshToken } = await this.commandBus.execute(
+      new LoginCommand(data, req.ip!, req.headers['user-agent']!),
     );
 
     res.cookie(SETTINGS.REFRESH_TOKEN_NAME, refreshToken, {
@@ -114,10 +121,11 @@ export class AuthController {
   //TODO delete for e2e tests
   //@SkipThrottle()
   async updateTokens(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const { accessToken, refreshToken } =
-      await this.sessionsService.updateTokens(
+    const { accessToken, refreshToken } = await this.commandBus.execute(
+      new UpdateTokensCommand(
         req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
-      );
+      ),
+    );
 
     res.cookie(SETTINGS.REFRESH_TOKEN_NAME, refreshToken, {
       httpOnly: true,
@@ -133,8 +141,10 @@ export class AuthController {
   //TODO delete for e2e tests
   //@SkipThrottle()
   async logout(@Req() req: Request): Promise<void> {
-    return this.usersService.logout(
-      req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+    return await this.commandBus.execute(
+      new LogoutCommand(
+        req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+      ),
     );
   }
 }
