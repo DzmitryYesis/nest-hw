@@ -16,15 +16,18 @@ import { Types } from 'mongoose';
 import { BearerAuthGuard } from '../../../../core';
 import { Public } from '../../../../core/decorators';
 import { COMMENTS_API_PATH } from '../../../../constants';
-import { CommentService } from '../application';
 import { BaseLikeStatusInputDto } from '../../../../core/dto';
+import { CommandBus } from '@nestjs/cqrs';
+import { UpdateCommentCommand } from '../application/use-cases/update-comment.use-case';
+import { ChangeCommentLikeStatusCommand } from '../application/use-cases/change-comment-like-status.use-case';
+import { DeleteCommentCommand } from '../application/use-cases/delete-comment.use-case';
 
 @UseGuards(BearerAuthGuard)
 @Controller(COMMENTS_API_PATH.ROOT_URL)
 export class CommentController {
   constructor(
-    private commentService: CommentService,
     private commentQueryRepository: CommentQueryRepository,
+    private commandBus: CommandBus,
   ) {}
 
   @Public()
@@ -43,7 +46,9 @@ export class CommentController {
     @Param('id') id: Types.ObjectId,
     @Body() data: CommentInputDto,
   ): Promise<void> {
-    return this.commentService.updateComment(id, data, req.userId);
+    return await this.commandBus.execute(
+      new UpdateCommentCommand(id, data, req.userId),
+    );
   }
 
   @Put(`:id/${COMMENTS_API_PATH.LIKE_STATUS}`)
@@ -53,7 +58,9 @@ export class CommentController {
     @Param('id') id: Types.ObjectId,
     @Body() data: BaseLikeStatusInputDto,
   ): Promise<void> {
-    return this.commentService.likeStatus(req.userId, id, data);
+    return await this.commandBus.execute(
+      new ChangeCommentLikeStatusCommand(req.userId, id, data),
+    );
   }
 
   @Delete(':id')
@@ -62,6 +69,8 @@ export class CommentController {
     @Req() req: Request & { userId: string },
     @Param('id') id: Types.ObjectId,
   ): Promise<void> {
-    return this.commentService.deleteComment(id, req.userId);
+    return await this.commandBus.execute(
+      new DeleteCommentCommand(id, req.userId),
+    );
   }
 }

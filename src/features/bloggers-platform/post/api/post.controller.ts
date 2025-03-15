@@ -12,7 +12,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { PostService } from '../application';
 import { PostQueryRepository } from '../infrastructure';
 import { PostInputDto, PostsQueryParams, PostViewDto } from '../dto';
 import {
@@ -29,11 +28,18 @@ import {
 import { Types } from 'mongoose';
 import { COMMENTS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 import { BaseLikeStatusInputDto } from '../../../../core/dto';
+import { CommandBus } from '@nestjs/cqrs';
+import { GetPostByIdCommand } from '../application/use-cases/get-post-by-id.use-case';
+import { CreatePostCommand } from '../application/use-cases/create-post.use-case';
+import { CreateCommentForPostCommand } from '../application/use-cases/create-comment-for-post.use-case';
+import { UpdatePostCommand } from '../application/use-cases/update-post.use-case';
+import { DeletePostCommand } from '../application/use-cases/delete-post.use-case';
+import { ChangePostLikeStatusCommand } from '../application/use-cases/change-post-like-status.use-case';
 
 @Controller(POSTS_API_PATH.ROOT_URL)
 export class PostController {
   constructor(
-    private postService: PostService,
+    private commandBus: CommandBus,
     private postQueryRepository: PostQueryRepository,
     private commentsQueryRepository: CommentQueryRepository,
   ) {}
@@ -63,7 +69,7 @@ export class PostController {
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
-    const postId = await this.postService.getPostById(id);
+    const postId = await this.commandBus.execute(new GetPostByIdCommand(id));
 
     return this.commentsQueryRepository.getCommentsForPost(
       postId!,
@@ -75,7 +81,7 @@ export class PostController {
   @UseGuards(BasicAuthGuard)
   @Post()
   async createPost(@Body() data: PostInputDto): Promise<PostViewDto> {
-    const postId = await this.postService.createPost(data);
+    const postId = await this.commandBus.execute(new CreatePostCommand(data));
 
     return this.postQueryRepository.getPostById(postId!);
   }
@@ -87,10 +93,8 @@ export class PostController {
     @Param('id') id: Types.ObjectId,
     @Body() date: CommentInputDto,
   ): Promise<CommentViewDto> {
-    const commentId = await this.postService.createCommentForPost(
-      id,
-      req.userId,
-      date,
+    const commentId = await this.commandBus.execute(
+      new CreateCommentForPostCommand(id, req.userId, date),
     );
 
     return this.commentsQueryRepository.getCommentById(commentId);
@@ -103,7 +107,7 @@ export class PostController {
     @Param('id') id: Types.ObjectId,
     @Body() data: PostInputDto,
   ): Promise<void> {
-    return this.postService.updatePost(id, data);
+    return await this.commandBus.execute(new UpdatePostCommand(id, data));
   }
 
   @UseGuards(BearerAuthGuard)
@@ -114,13 +118,15 @@ export class PostController {
     @Param('id') id: Types.ObjectId,
     @Body() data: BaseLikeStatusInputDto,
   ): Promise<void> {
-    return this.postService.likeStatus(req.userId, id, data);
+    return await this.commandBus.execute(
+      new ChangePostLikeStatusCommand(req.userId, id, data),
+    );
   }
 
   @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePost(@Param('id') id: Types.ObjectId): Promise<void> {
-    return this.postService.deletePostById(id);
+    return await this.commandBus.execute(new DeletePostCommand(id));
   }
 }

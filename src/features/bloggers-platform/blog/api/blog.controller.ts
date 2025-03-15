@@ -12,7 +12,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { BlogService } from '../application';
 import { BlogQueryRepository } from '../infrastructure';
 import { BasicAuthGuard, PaginatedViewDto } from '../../../../core';
 import {
@@ -26,14 +25,20 @@ import { PostQueryRepository, PostsQueryParams, PostViewDto } from '../../post';
 import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 import { Types } from 'mongoose';
 import { Public } from '../../../../core/decorators';
+import { CommandBus } from '@nestjs/cqrs';
+import { CreateBlogCommand } from '../application/use-cases/create-blog.use-case';
+import { CreatePostForBlogCommand } from '../application/use-cases/create-post-for-blog.use-case';
+import { GetBlogByIdCommand } from '../application/use-cases/get-blog-by-id.use-case';
+import { UpdateBlogCommand } from '../application/use-cases/update-blog.use-case';
+import { DeleteBlogCommand } from '../application/use-cases/delete-blog.use-case';
 
 @UseGuards(BasicAuthGuard)
 @Controller(BLOGS_API_PATH)
 export class BlogController {
   constructor(
-    private blogService: BlogService,
     private blogQueryRepository: BlogQueryRepository,
     private postQueryRepository: PostQueryRepository,
+    private commandBus: CommandBus,
   ) {}
 
   @Public()
@@ -60,7 +65,7 @@ export class BlogController {
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
-    const blogId = await this.blogService.getBlogById(id);
+    const blogId = await this.commandBus.execute(new GetBlogByIdCommand(id));
 
     return this.postQueryRepository.getPostsForBlog(
       blogId!,
@@ -71,7 +76,7 @@ export class BlogController {
 
   @Post()
   async createBlog(@Body() data: BlogInputDto): Promise<BlogViewDto> {
-    const blogId = await this.blogService.createBlog(data);
+    const blogId = await this.commandBus.execute(new CreateBlogCommand(data));
 
     return this.blogQueryRepository.getBlogById(blogId);
   }
@@ -81,7 +86,9 @@ export class BlogController {
     @Param('id') id: Types.ObjectId,
     @Body() data: PostForBlogInputDto,
   ): Promise<PostViewDto> {
-    const postId = await this.blogService.createPostForBlog(id, data);
+    const postId = await this.commandBus.execute(
+      new CreatePostForBlogCommand(id, data),
+    );
 
     return this.postQueryRepository.getPostById(postId!);
   }
@@ -92,12 +99,12 @@ export class BlogController {
     @Param('id') id: Types.ObjectId,
     @Body() data: BlogInputDto,
   ): Promise<void> {
-    return this.blogService.updateBlog(id, data);
+    return await this.commandBus.execute(new UpdateBlogCommand(id, data));
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlog(@Param('id') id: Types.ObjectId): Promise<void> {
-    return this.blogService.deleteBlogById(id);
+    return await this.commandBus.execute(new DeleteBlogCommand(id));
   }
 }
