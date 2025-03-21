@@ -9,18 +9,20 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SECURITY_API_PATH } from '../../../constants';
-import { SessionsService } from '../application/sessions.service';
 import { RefreshAuthGuard } from '../../../core/guards/refresh-guard/refresh-token.guard';
 import { Request } from 'express';
 import { SETTINGS } from '../../../settings';
 import { SessionDeviceViewDto } from '../dto/view-dto/session-device.view-dto';
 import { SessionsQueryRepository } from '../infrastructure/query/sessions.query-repository';
+import { CommandBus } from '@nestjs/cqrs';
+import { DeleteDeviceCommand } from '../application/use-cases/delete-device.use-case';
+import { DeleteDevicesExcludeCurrentCommand } from '../application/use-cases/delete-devices-exclude-current.use-case';
 
 @Controller(SECURITY_API_PATH.ROOT_URL)
 export class SecurityController {
   constructor(
-    private sessionsService: SessionsService,
     private sessionsQueryRepository: SessionsQueryRepository,
+    private commandBus: CommandBus,
   ) {}
 
   @Get(SECURITY_API_PATH.DEVICES)
@@ -39,10 +41,12 @@ export class SecurityController {
     @Req() req: Request & { userId: string },
     @Param('id') id: string,
   ): Promise<void> {
-    return this.sessionsService.deleteDevice(
-      id,
-      req.userId,
-      req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+    return await this.commandBus.execute(
+      new DeleteDeviceCommand(
+        id,
+        req.userId,
+        req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+      ),
     );
   }
 
@@ -50,8 +54,10 @@ export class SecurityController {
   @UseGuards(RefreshAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteDevicesExcludeCurrent(@Req() req: Request): Promise<void> {
-    return this.sessionsService.deleteDevicesExcludeCurrent(
-      req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+    return await this.commandBus.execute(
+      new DeleteDevicesExcludeCurrentCommand(
+        req.cookies[SETTINGS.REFRESH_TOKEN_NAME].replace('refreshToken=', ''),
+      ),
     );
   }
 }

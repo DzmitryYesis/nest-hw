@@ -1,48 +1,36 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { CommentRepository } from '../infrastructure';
 import { ObjectId } from 'mongodb';
-import { CommentInputDto } from '../dto';
-import { BaseLikeStatusInputDto } from '../../../../core/dto';
-import { BaseLikesDislikesDBData } from '../../../../core';
-import { UserLikeStatus } from '../../../../constants';
-import { UsersRepository } from '../../../user-accounts';
+import { BaseLikeStatusInputDto } from '../../../../../core/dto';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommentRepository } from '../../infrastructure';
+import { UsersRepository } from '../../../../user-accounts';
+import { NotFoundException } from '@nestjs/common';
+import { BaseLikesDislikesDBData } from '../../../../../core';
+import { UserLikeStatus } from '../../../../../constants';
 
-@Injectable()
-export class CommentService {
+export class ChangeCommentLikeStatusCommand {
+  constructor(
+    public userId: string,
+    public id: ObjectId,
+    public data: BaseLikeStatusInputDto,
+  ) {}
+}
+
+@CommandHandler(ChangeCommentLikeStatusCommand)
+export class ChangeCommentLikeStatusUseCase
+  implements ICommandHandler<ChangeCommentLikeStatusCommand>
+{
   constructor(
     private commentRepository: CommentRepository,
     private userRepository: UsersRepository,
   ) {}
 
-  async updateComment(
-    id: ObjectId,
-    dto: CommentInputDto,
-    userId: string,
-  ): Promise<void> {
-    const comment = await this.commentRepository.findCommentById(id);
+  async execute(command: ChangeCommentLikeStatusCommand): Promise<void> {
+    const {
+      id,
+      userId,
+      data: { likeStatus },
+    } = command;
 
-    if (!comment) {
-      throw new NotFoundException(`Comment with id ${id} not found`);
-    }
-
-    if (comment.commentatorInfo.userId !== userId) {
-      throw new ForbiddenException("You can't do it");
-    }
-
-    comment.updateComment(dto);
-
-    await this.commentRepository.save(comment);
-  }
-
-  async likeStatus(
-    userId: string,
-    id: ObjectId,
-    data: BaseLikeStatusInputDto,
-  ): Promise<void> {
     const comment = await this.commentRepository.findCommentById(id);
 
     if (!comment) {
@@ -80,7 +68,7 @@ export class CommentService {
       addedAt: new Date(),
     } as BaseLikesDislikesDBData;
 
-    if (data.likeStatus === UserLikeStatus.LIKE) {
+    if (likeStatus === UserLikeStatus.LIKE) {
       if (!likesArr.includes(userId) && !dislikesArr.includes(userId)) {
         comment.addLikeOrDislike('likes', likeOrDislikeInfo);
       }
@@ -90,7 +78,7 @@ export class CommentService {
       }
     }
 
-    if (data.likeStatus === UserLikeStatus.DISLIKE) {
+    if (likeStatus === UserLikeStatus.DISLIKE) {
       if (!likesArr.includes(userId) && !dislikesArr.includes(userId)) {
         comment.addLikeOrDislike('dislikes', likeOrDislikeInfo);
       }
@@ -100,7 +88,7 @@ export class CommentService {
       }
     }
 
-    if (data.likeStatus === UserLikeStatus.NONE) {
+    if (likeStatus === UserLikeStatus.NONE) {
       if (likesArr.includes(userId)) {
         comment.deleteLikeOrDislike('likes', userId);
       }
@@ -109,22 +97,6 @@ export class CommentService {
         comment.deleteLikeOrDislike('dislikes', userId);
       }
     }
-
-    await this.commentRepository.save(comment);
-  }
-
-  async deleteComment(id: ObjectId, userId: string): Promise<void> {
-    const comment = await this.commentRepository.findCommentById(id);
-
-    if (!comment) {
-      throw new NotFoundException(`Comment with id ${id} not found`);
-    }
-
-    if (comment.commentatorInfo.userId !== userId) {
-      throw new ForbiddenException("You can't do it");
-    }
-
-    comment.deleteComment();
 
     await this.commentRepository.save(comment);
   }

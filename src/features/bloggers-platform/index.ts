@@ -3,7 +3,6 @@ export {
   BlogRepository,
   BlogQueryRepository,
   BlogController,
-  BlogService,
   PostForBlogInputDto,
   BlogViewDto,
   BlogInputDto,
@@ -18,7 +17,6 @@ export {
   PostRepository,
   PostQueryRepository,
   PostController,
-  PostService,
   PostViewDto,
   PostsQueryParams,
   PostInputDto,
@@ -32,7 +30,6 @@ export {
 } from './post';
 export {
   CommentController,
-  CommentService,
   CommentRepository,
   CommentQueryRepository,
   CreateCommentDomainDto,
