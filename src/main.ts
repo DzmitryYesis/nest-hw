@@ -10,6 +10,7 @@ import { appSetup } from './setup/app.setup';
 //TODO class for errors in service and repository
 //TODO try to find best practise to add refresh token to cookie
 //TODO change type for deviceId to ObjectId not string
+//TODO all todo fixed on postgres
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
