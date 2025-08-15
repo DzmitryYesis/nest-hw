@@ -66,10 +66,12 @@ export class LoginUseCase implements ICommandHandler<LoginCommand> {
 
     const deviceId = uuidV4();
 
-    const accessToken = await this.jwtService.createAccessJWT(user._id);
+    const accessToken = await this.jwtService.createAccessJWT(
+      user._id.toString(),
+    );
     const { refreshToken, exp, iat } = await this.jwtService.createRefreshJWT(
       deviceId,
-      user._id,
+      user._id.toString(),
     );
 
     const session = this.SessionModel.createInstance({

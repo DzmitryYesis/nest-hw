@@ -1,3 +1,5 @@
+import * as jwt from 'jsonwebtoken';
+
 export const SETTINGS = {
   PORT: process.env.PORT || 3005, //TODO refactoring port logic
   REFRESH_TOKEN_NAME: 'refreshToken',
@@ -9,3 +11,13 @@ export const SETTINGS = {
   MONGO_URL: 'mongodb://localhost:27017',
   DB_NAME: 'nest-hw',
 };
+
+//TODO Fix settings and jwt config
+export const JWT_CFG = {
+  accessSecret: SETTINGS.JWT_ACCESS_TOKEN_SECRET as jwt.Secret,
+  refreshSecret: SETTINGS.JWT_REFRESH_TOKEN_SECRET as jwt.Secret,
+  accessExpiresIn:
+    SETTINGS.JWT_ACCESS_TOKEN_EXPIRES_TIME as jwt.SignOptions['expiresIn'],
+  refreshExpiresIn:
+    SETTINGS.JWT_REFRESH_TOKEN_EXPIRES_TIME as jwt.SignOptions['expiresIn'],
+} as const;

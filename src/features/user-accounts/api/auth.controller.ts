@@ -23,7 +23,7 @@ import {
 import { ExtractUserFromRequest, BearerAuthGuard } from '../../../core';
 import { UsersQueryRepository } from '../infrastructure';
 import { SETTINGS } from '../../../settings';
-//import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler'
+//import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { RefreshAuthGuard } from '../../../core/guards/refresh-guard/refresh-token.guard';
 import { CommandBus } from '@nestjs/cqrs';
 import { CreateUserCommand } from '../application/use-cases/create-user.use-case';

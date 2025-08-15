@@ -1,5 +1,4 @@
-import { ObjectId } from 'mongodb';
-import { SETTINGS } from '../../../settings';
+import { JWT_CFG } from '../../../settings';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -18,23 +17,23 @@ type TRefreshTokenData = {
 };
 
 export class JwtService {
-  async createAccessJWT(userId: ObjectId): Promise<string> {
-    return jwt.sign({ userId: userId }, SETTINGS.JWT_ACCESS_TOKEN_SECRET, {
-      expiresIn: SETTINGS.JWT_ACCESS_TOKEN_EXPIRES_TIME,
+  async createAccessJWT(userId: string): Promise<string> {
+    return jwt.sign({ userId }, JWT_CFG.accessSecret, {
+      expiresIn: JWT_CFG.accessExpiresIn,
     });
   }
 
   async createRefreshJWT(
     deviceId: string,
-    userId: ObjectId,
+    userId: string,
   ): Promise<TRefreshTokenData> {
     const refreshToken = jwt.sign(
       {
         deviceId,
         userId,
       },
-      SETTINGS.JWT_REFRESH_TOKEN_SECRET,
-      { expiresIn: SETTINGS.JWT_REFRESH_TOKEN_EXPIRES_TIME },
+      JWT_CFG.refreshSecret,
+      { expiresIn: JWT_CFG.refreshExpiresIn },
     );
     const refreshTokenPayload = jwt.decode(refreshToken) as Omit<
       TRefreshTokenData,
@@ -52,10 +51,7 @@ export class JwtService {
 
   async verifyAccessToken(token: string): Promise<TAccessTokenData> {
     try {
-      return jwt.verify(
-        token,
-        SETTINGS.JWT_ACCESS_TOKEN_SECRET,
-      ) as TAccessTokenData;
+      return jwt.verify(token, JWT_CFG.accessSecret) as TAccessTokenData;
     } catch (e) {
       throw new UnauthorizedException(e);
     }

@@ -4,7 +4,6 @@ import { JwtService } from '../../../service';
 import { LoginViewDto } from '../../dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { SETTINGS } from '../../../../settings';
-import { ObjectId } from 'mongodb';
 
 export class UpdateTokensCommand {
   constructor(public refreshToken: string) {}
@@ -49,7 +48,7 @@ export class UpdateTokensUseCase
     }
 
     const newAccessToken = await this.jwtService.createAccessJWT(
-      new ObjectId(currentSession.userId),
+      currentSession.userId,
     );
     const {
       refreshToken: newRefreshToken,
@@ -57,7 +56,7 @@ export class UpdateTokensUseCase
       exp,
     } = await this.jwtService.createRefreshJWT(
       currentSession.deviceId,
-      new ObjectId(currentSession.userId),
+      currentSession.userId,
     );
 
     currentSession.updateSession({ iat, exp });
