@@ -1,4 +1,4 @@
-import { UserDocument } from '../../domain';
+import { UserRowDto } from '../application-dto';
 
 export class UserViewDto {
   id: string;
@@ -6,13 +6,13 @@ export class UserViewDto {
   email: string;
   createdAt: Date;
 
-  static mapToView(user: UserDocument): UserViewDto {
+  static mapToView(user: UserRowDto): UserViewDto {
     const dto = new UserViewDto();
 
     dto.email = user.email;
     dto.login = user.login;
-    dto.id = user._id.toString();
-    dto.createdAt = user.createdAt;
+    dto.id = user.id;
+    dto.createdAt = new Date(user.createdAt);
 
     return dto;
   }

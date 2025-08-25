@@ -1,10 +1,10 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../../infrastructure';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 
 export class DeleteUserByIdCommand {
-  constructor(public id: ObjectId) {}
+  constructor(public id: string) {}
 }
 
 @CommandHandler(DeleteUserByIdCommand)
@@ -14,17 +14,23 @@ export class DeleteUserByIdUseCase
   constructor(private usersRepository: UsersRepository) {}
 
   async execute(command: DeleteUserByIdCommand): Promise<void> {
-    const user = await this.usersRepository.findByCredentials(
-      '_id',
-      command.id,
-    );
+    if (!isUuidV4(command.id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    const [user] = await this.usersRepository.findUserById(command.id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${command.id} not found`);
     }
 
-    user.deleteUser();
-
-    await this.usersRepository.save(user);
+    await this.usersRepository.deleteUser(user.id);
   }
 }

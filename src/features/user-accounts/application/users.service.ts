@@ -7,14 +7,31 @@ import { UsersRepository } from '../infrastructure';
 export class UsersService {
   constructor(private usersRepository: UsersRepository) {}
 
-  async checkIsUserUnique(field: string, value: string): Promise<boolean> {
-    const user = await this.usersRepository.findByCredentials(field, value);
+  async checkIsUserHaveUniqueEmail(email: string): Promise<boolean> {
+    const userByEmail = await this.usersRepository.findUserByEmail(email);
 
-    if (user) {
+    if (userByEmail.length !== 0) {
       throw new BadRequestException({
         errorsMessages: [
           {
-            field: field,
+            field: 'email',
+            message: 'not unique',
+          },
+        ],
+      });
+    }
+
+    return false;
+  }
+
+  async checkIsUserHaveUniqueLogin(login: string): Promise<boolean> {
+    const userByLogin = await this.usersRepository.findUserByLogin(login);
+
+    if (userByLogin.length !== 0) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'login',
             message: 'not unique',
           },
         ],

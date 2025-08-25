@@ -17,22 +17,19 @@ export class PasswordRecoveryUseCase
   ) {}
 
   async execute(command: PasswordRecoveryCommand): Promise<void> {
-    const user = await this.usersRepository.findByCredentials(
-      'email',
-      command.email,
-    );
+    const [user] = await this.usersRepository.findUserByEmail(command.email);
 
     if (user) {
-      user.createPasswordRecoveryCode();
+      const recoveryCode = uuidV4();
+
+      await this.usersRepository.createRecoveryCode(user.id, recoveryCode);
 
       this.emailNotificationService
         .sendEmailWithRecoveryPasswordCode({
-          code: user.passwordRecovery.recoveryCode!,
+          code: recoveryCode,
           email: command.email,
         })
         .catch((e) => console.log('Error send email: ', e));
-
-      await this.usersRepository.save(user);
 
       return;
     }

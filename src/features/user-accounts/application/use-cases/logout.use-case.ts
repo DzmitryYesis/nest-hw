@@ -20,7 +20,7 @@ export class LogoutUseCase implements ICommandHandler<LogoutCommand> {
       command.refreshToken,
     );
 
-    const session = await this.sessionsRepository.findSessionByDeviceIdAndIat(
+    const [session] = await this.sessionsRepository.findSessionByDeviceIdAndIat(
       deviceId,
       iat,
     );
@@ -35,15 +35,11 @@ export class LogoutUseCase implements ICommandHandler<LogoutCommand> {
     );
 
     if (isRefreshTokenExpired) {
-      session.deleteSession();
-
-      await this.sessionsRepository.save(session);
+      await this.sessionsRepository.deleteSession(session.id);
 
       throw new UnauthorizedException('Refresh token is missing');
     }
 
-    session.deleteSession();
-
-    await this.sessionsRepository.save(session);
+    await this.sessionsRepository.deleteSession(session.id);
   }
 }

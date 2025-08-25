@@ -1,5 +1,5 @@
 import { IsStringWithTrim, Trim } from '../../../../core';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { passwordLength } from '../../../../constants';
 
 export class ChangePasswordInputDto {
@@ -9,5 +9,6 @@ export class ChangePasswordInputDto {
   @Trim()
   @IsString()
   @IsNotEmpty()
+  @IsUUID('4', { message: 'Some problem' })
   recoveryCode: string;
 }

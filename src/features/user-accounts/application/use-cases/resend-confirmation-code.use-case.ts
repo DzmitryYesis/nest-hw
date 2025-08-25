@@ -2,6 +2,7 @@ import { UsersRepository } from '../../infrastructure';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException } from '@nestjs/common';
 import { EmailNotificationService } from '../../../service';
+import { v4 as uuidV4 } from 'uuid';
 
 export class ResendConfirmationCodeCommand {
   constructor(public email: string) {}
@@ -17,15 +18,25 @@ export class ResendConfirmationCodeUseCase
   ) {}
 
   async execute(command: ResendConfirmationCodeCommand): Promise<void> {
-    const user = await this.usersRepository.findByCredentials(
-      'email',
-      command.email,
-    );
+    const [user] = await this.usersRepository.findUserByEmail(command.email);
+
+    if (!user || user.isConfirmed) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'email',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    const [confirmationInfo] =
+      await this.usersRepository.findUserConfirmationCodeById(user.id);
 
     if (
-      !user ||
-      user.emailConfirmation.expirationDate < new Date() ||
-      user.emailConfirmation.isConfirmed
+      !confirmationInfo ||
+      new Date(confirmationInfo.expirationDate) < new Date()
     ) {
       throw new BadRequestException({
         errorsMessages: [
@@ -37,16 +48,19 @@ export class ResendConfirmationCodeUseCase
       });
     }
 
-    user.changeConfirmationCode();
+    const confirmationCode = uuidV4();
+
+    await this.usersRepository.updateConfirmationCode(
+      confirmationCode,
+      user.id,
+    );
 
     this.emailNotificationService
       .sendEmailWithConfirmationCode({
         login: user.login,
         email: user.email,
-        code: user.emailConfirmation.confirmationCode,
+        code: confirmationCode,
       })
       .catch((e) => console.log('Error send email: ', e));
-
-    await this.usersRepository.save(user);
   }
 }

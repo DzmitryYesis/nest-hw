@@ -11,16 +11,17 @@ export class ConfirmUserUseCase implements ICommandHandler<ConfirmUserCommand> {
   constructor(private usersRepository: UsersRepository) {}
 
   async execute(command: ConfirmUserCommand): Promise<void> {
-    const user = await this.usersRepository.findByCredentials(
-      'emailConfirmation.confirmationCode',
-      command.code,
-    );
+    const [userInfo] =
+      await this.usersRepository.findUserInfoByConfirmationCode(command.code);
+
+    const [user] = await this.usersRepository.findUserById(userInfo.userId);
 
     if (
       !user ||
-      user.emailConfirmation.confirmationCode !== command.code ||
-      user.emailConfirmation.expirationDate < new Date() ||
-      user.emailConfirmation.isConfirmed
+      !userInfo ||
+      userInfo.confirmationCode !== command.code ||
+      new Date(userInfo.expirationDate) < new Date() ||
+      user.isConfirmed
     ) {
       throw new BadRequestException({
         errorsMessages: [
@@ -32,8 +33,6 @@ export class ConfirmUserUseCase implements ICommandHandler<ConfirmUserCommand> {
       });
     }
 
-    user.confirmUser();
-
-    await this.usersRepository.save(user);
+    await this.usersRepository.confirmUser(user.id);
   }
 }

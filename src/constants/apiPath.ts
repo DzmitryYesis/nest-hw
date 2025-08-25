@@ -1,4 +1,4 @@
-export const USERS_API_PATH = 'users';
+export const USERS_API_PATH = 'sa/users';
 export const BLOGS_API_PATH = 'blogs';
 
 export const COMMENTS_API_PATH = {

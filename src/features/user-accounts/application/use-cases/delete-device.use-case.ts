@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { SETTINGS } from '../../../../settings';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 
 export class DeleteDeviceCommand {
   constructor(
@@ -28,7 +29,11 @@ export class DeleteDeviceUseCase
   async execute(command: DeleteDeviceCommand): Promise<void> {
     const { userId, deviceId, refreshToken } = command;
 
-    const session =
+    if (!isUuidV4(deviceId)) {
+      throw new NotFoundException();
+    }
+
+    const [session] =
       await this.sessionsRepository.findSessionByDeviceId(deviceId);
 
     if (!session) {
@@ -41,9 +46,7 @@ export class DeleteDeviceUseCase
     );
 
     if (isRefreshTokenExpired) {
-      session.deleteSession();
-
-      await this.sessionsRepository.save(session);
+      await this.sessionsRepository.deleteSession(session.id);
 
       throw new UnauthorizedException();
     }
@@ -52,8 +55,6 @@ export class DeleteDeviceUseCase
       throw new ForbiddenException();
     }
 
-    session.deleteSession();
-
-    await this.sessionsRepository.save(session);
+    await this.sessionsRepository.deleteSession(session.id);
   }
 }

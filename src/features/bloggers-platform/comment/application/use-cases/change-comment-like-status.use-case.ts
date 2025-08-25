@@ -44,10 +44,7 @@ export class ChangeCommentLikeStatusUseCase
       });
     }
 
-    const user = await this.userRepository.findByCredentials(
-      '_id',
-      new ObjectId(userId),
-    );
+    const [user] = await this.userRepository.findUserById(userId);
 
     if (!user) {
       throw new NotFoundException({

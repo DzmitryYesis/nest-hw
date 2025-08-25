@@ -1,19 +1,19 @@
-import { Session, SessionModelType } from '../../domain/session.entity';
-import { InjectModel } from '@nestjs/mongoose';
 import { SessionDeviceViewDto } from '../../dto/view-dto/session-device.view-dto';
-import { SessionStatusEnum } from '../../../../constants';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 export class SessionsQueryRepository {
-  constructor(
-    @InjectModel(Session.name)
-    private SessionModel: SessionModelType,
-  ) {}
+  constructor(@InjectDataSource() protected dataSource: DataSource) {}
 
   async getAllDevices(userId: string): Promise<SessionDeviceViewDto[]> {
-    const devices = await this.SessionModel.find({
-      userId,
-      sessionStatus: { $ne: SessionStatusEnum.DELETED },
-    });
+    const devices = await this.dataSource.query(
+      `
+    SELECT * FROM public."Sessions" 
+    WHERE "userId" = $1::uuid
+    AND "sessionStatus" <> 'DELETED'
+    AND "deletedAt" IS NULL`,
+      [userId],
+    );
 
     return devices.map(SessionDeviceViewDto.mapToView);
   }
