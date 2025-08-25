@@ -7,12 +7,12 @@ import {
   authBasic,
   deleteAllData,
   ErrorMessage,
-  invalidId,
   UserTestManager,
   getStringWithLength,
 } from './helpers';
 import { AppModule } from '../src/app.module';
 import { UserViewDto } from '../src/features/user-accounts';
+import { v4 as uuidV4 } from 'uuid';
 
 describe('Users controller (e2e)', () => {
   let app: INestApplication;
@@ -434,8 +434,10 @@ describe('Users controller (e2e)', () => {
     it("shouldn't delete user by invalid userId", async () => {
       await userTestManager.createUser(1);
 
+      const fakeUserId = uuidV4();
+
       await request(app.getHttpServer())
-        .delete(`/${USERS_API_PATH}/${invalidId}`)
+        .delete(`/${USERS_API_PATH}/${fakeUserId}`)
         .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.NOT_FOUND);
     });

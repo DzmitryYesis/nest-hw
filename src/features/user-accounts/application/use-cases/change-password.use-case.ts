@@ -20,12 +20,14 @@ export class ChangePasswordUseCase
   async execute(command: ChangePasswordCommand): Promise<void> {
     const { newPassword, recoveryCode } = command.dto;
 
-    const user = await this.usersRepository.findByCredentials(
-      'passwordRecovery.recoveryCode',
-      recoveryCode,
-    );
+    const [recoveryPasswordInfo] =
+      await this.usersRepository.findUserInfoByRecoveryCode(recoveryCode);
 
-    if (!user || user.passwordRecovery.expirationDate! < new Date()) {
+    if (
+      !recoveryPasswordInfo ||
+      !recoveryPasswordInfo.expirationDate ||
+      new Date(recoveryPasswordInfo.expirationDate) < new Date()
+    ) {
       throw new BadRequestException({
         errorsMessages: [
           {
@@ -39,8 +41,9 @@ export class ChangePasswordUseCase
     const passwordHash =
       await this.cryptoService.createPasswordHash(newPassword);
 
-    user.changePassword(passwordHash);
-
-    await this.usersRepository.save(user);
+    await this.usersRepository.updateUserPassword(
+      passwordHash,
+      recoveryPasswordInfo.userId,
+    );
   }
 }

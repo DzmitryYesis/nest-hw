@@ -1,7 +1,5 @@
-import { LoginInputDto, LoginViewDto } from '../../dto';
+import { CreateSessionDomainDto, LoginInputDto, LoginViewDto } from '../../dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InjectModel } from '@nestjs/mongoose';
-import { Session, SessionModelType } from '../../domain/session.entity';
 import { UsersRepository } from '../../infrastructure';
 import { SessionsRepository } from '../../infrastructure/sessions.repository';
 import { CryptoService, JwtService } from '../../../service';
@@ -19,8 +17,6 @@ export class LoginCommand {
 @CommandHandler(LoginCommand)
 export class LoginUseCase implements ICommandHandler<LoginCommand> {
   constructor(
-    @InjectModel(Session.name)
-    private SessionModel: SessionModelType,
     private usersRepository: UsersRepository,
     private sessionsRepository: SessionsRepository,
     private cryptoService: CryptoService,
@@ -34,7 +30,7 @@ export class LoginUseCase implements ICommandHandler<LoginCommand> {
       data: { loginOrEmail, password },
     } = command;
 
-    const user =
+    const [user] =
       await this.usersRepository.findUserByLoginOrEmail(loginOrEmail);
 
     if (!user) {
@@ -66,24 +62,22 @@ export class LoginUseCase implements ICommandHandler<LoginCommand> {
 
     const deviceId = uuidV4();
 
-    const accessToken = await this.jwtService.createAccessJWT(
-      user._id.toString(),
-    );
+    const accessToken = await this.jwtService.createAccessJWT(user.id);
     const { refreshToken, exp, iat } = await this.jwtService.createRefreshJWT(
       deviceId,
-      user._id.toString(),
+      user.id,
     );
 
-    const session = this.SessionModel.createInstance({
+    const session = {
       iat,
       exp,
       deviceId,
       deviceName: device || 'Unknown device',
       ip,
-      userId: user._id.toString(),
-    });
+      userId: user.id,
+    } as CreateSessionDomainDto;
 
-    await this.sessionsRepository.save(session);
+    await this.sessionsRepository.createSession(session);
 
     return { accessToken, refreshToken };
   }

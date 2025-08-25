@@ -51,6 +51,7 @@ describe('Auth controller (e2e)', () => {
 
   afterEach(async () => {
     await deleteAllData(app);
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {

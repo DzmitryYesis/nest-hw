@@ -21,7 +21,6 @@ import {
   UserInfoViewDto,
 } from '../dto';
 import { ExtractUserFromRequest, BearerAuthGuard } from '../../../core';
-import { UsersQueryRepository } from '../infrastructure';
 import { SETTINGS } from '../../../settings';
 //import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { RefreshAuthGuard } from '../../../core/guards/refresh-guard/refresh-token.guard';
@@ -34,6 +33,7 @@ import { ChangePasswordCommand } from '../application/use-cases/change-password.
 import { LoginCommand } from '../application/use-cases/login.use-case';
 import { LogoutCommand } from '../application/use-cases/logout.use-case';
 import { UpdateTokensCommand } from '../application/use-cases/update-tokens.use-case';
+import { UsersSqlQueryRepository } from '../infrastructure/query/users.sql-query-repository';
 
 //TODO delete for e2e tests
 //@UseGuards(ThrottlerGuard)
@@ -41,7 +41,7 @@ import { UpdateTokensCommand } from '../application/use-cases/update-tokens.use-
 export class AuthController {
   constructor(
     private commandBus: CommandBus,
-    private usersQueryRepository: UsersQueryRepository,
+    private usersSqlQueryRepository: UsersSqlQueryRepository,
   ) {}
 
   @Get(AUTH_API_PATH.ME)
@@ -51,7 +51,7 @@ export class AuthController {
   async getUserInfo(
     @ExtractUserFromRequest() userId: string,
   ): Promise<UserInfoViewDto> {
-    return this.usersQueryRepository.getUserInfoById(userId);
+    return this.usersSqlQueryRepository.getUserInfoById(userId);
   }
 
   @Post(AUTH_API_PATH.REGISTRATION)

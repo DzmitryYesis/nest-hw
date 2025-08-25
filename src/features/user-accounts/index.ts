@@ -3,4 +3,4 @@ export { UsersController, AuthController } from './api';
 export { UsersService } from './application';
 export * from './domain';
 export * from './dto';
-export { UsersQueryRepository, UsersRepository } from './infrastructure';
+export { UsersRepository } from './infrastructure';

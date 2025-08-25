@@ -10,11 +10,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UserViewDto, UserInputDto, UsersQueryParams } from '../dto';
+import { UserViewDto, UsersQueryParams, UserInputDto } from '../dto';
 import { PaginatedViewDto, BasicAuthGuard } from '../../../core';
-import { UsersQueryRepository } from '../infrastructure';
-import { Types } from 'mongoose';
 import { USERS_API_PATH } from '../../../constants';
+import { UsersSqlQueryRepository } from '../infrastructure/query/users.sql-query-repository';
 import { CommandBus } from '@nestjs/cqrs';
 import { CreateUserCommand } from '../application/use-cases/create-user.use-case';
 import { DeleteUserByIdCommand } from '../application/use-cases/delete-user-by-id.use-case';
@@ -23,7 +22,7 @@ import { DeleteUserByIdCommand } from '../application/use-cases/delete-user-by-i
 @Controller(USERS_API_PATH)
 export class UsersController {
   constructor(
-    private usersQueryRepository: UsersQueryRepository,
+    protected usersSqlQueryRepository: UsersSqlQueryRepository,
     private commandBus: CommandBus,
   ) {}
 
@@ -33,7 +32,7 @@ export class UsersController {
   ): Promise<PaginatedViewDto<UserViewDto[]>> {
     const queryParams = new UsersQueryParams(query);
 
-    return this.usersQueryRepository.getAllUsers(queryParams);
+    return this.usersSqlQueryRepository.getAllUsers(queryParams);
   }
 
   @Post()
@@ -42,12 +41,12 @@ export class UsersController {
       new CreateUserCommand({ ...data, isAdmin: false }),
     );
 
-    return this.usersQueryRepository.getUserById(userId);
+    return this.usersSqlQueryRepository.getUserById(userId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUserById(@Param('id') id: Types.ObjectId): Promise<void> {
+  async deleteUserById(@Param('id') id: string): Promise<void> {
     return await this.commandBus.execute(new DeleteUserByIdCommand(id));
   }
 }

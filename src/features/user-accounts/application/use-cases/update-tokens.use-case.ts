@@ -4,6 +4,7 @@ import { JwtService } from '../../../service';
 import { LoginViewDto } from '../../dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { SETTINGS } from '../../../../settings';
+import { UpdateSessionDto } from '../../dto/input-dto/update-session.dto';
 
 export class UpdateTokensCommand {
   constructor(public refreshToken: string) {}
@@ -24,7 +25,7 @@ export class UpdateTokensUseCase
       command.refreshToken,
     );
 
-    const currentSession =
+    const [currentSession] =
       await this.sessionsRepository.findSessionByDeviceIdAndIat(
         deviceId,
         oldIat,
@@ -40,9 +41,7 @@ export class UpdateTokensUseCase
     );
 
     if (isRefreshTokenExpired) {
-      currentSession.deleteSession();
-
-      await this.sessionsRepository.save(currentSession);
+      await this.sessionsRepository.deleteSession(currentSession.id);
 
       throw new UnauthorizedException('Refresh token is missing');
     }
@@ -59,9 +58,13 @@ export class UpdateTokensUseCase
       currentSession.userId,
     );
 
-    currentSession.updateSession({ iat, exp });
+    const updateInfo = {
+      id: currentSession.id,
+      iat,
+      exp,
+    } as UpdateSessionDto;
 
-    await this.sessionsRepository.save(currentSession);
+    await this.sessionsRepository.updateSession(updateInfo);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }

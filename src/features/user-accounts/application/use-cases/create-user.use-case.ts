@@ -1,11 +1,11 @@
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserModelType } from '../../domain';
 import { UsersRepository } from '../../infrastructure';
 import { CryptoService, EmailNotificationService } from '../../../service';
 import { CreateUserDto } from '../../dto';
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersService } from '../users.service';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { v4 as uuidV4 } from 'uuid';
 
 export class CreateUserCommand {
   constructor(public dto: CreateUserDto) {}
@@ -14,41 +14,52 @@ export class CreateUserCommand {
 @CommandHandler(CreateUserCommand)
 export class CreateUserUseCase implements ICommandHandler<CreateUserCommand> {
   constructor(
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
+    @InjectDataSource() protected dataSource: DataSource,
+    private userRepository: UsersRepository,
     private usersService: UsersService,
-    private usersRepository: UsersRepository,
     private cryptoService: CryptoService,
     private emailNotificationService: EmailNotificationService,
   ) {}
 
-  async execute(command: CreateUserCommand): Promise<ObjectId> {
+  async execute(command: CreateUserCommand): Promise<string> {
     const { isAdmin, email, login, password } = command.dto;
 
-    await this.usersService.checkIsUserUnique('login', login);
-    await this.usersService.checkIsUserUnique('email', email);
+    await this.usersService.checkIsUserHaveUniqueLogin(login);
+    await this.usersService.checkIsUserHaveUniqueEmail(email);
 
     const passwordHash = await this.cryptoService.createPasswordHash(password);
 
-    const user = this.UserModel.createInstance({
-      email,
-      login,
-      passwordHash: passwordHash,
-      isConfirmed: isAdmin,
-    });
-
     if (!isAdmin) {
+      const confirmationCode = uuidV4();
+
+      const userId = await this.userRepository.createUser(
+        login,
+        email,
+        passwordHash,
+        false,
+      );
+
+      await this.userRepository.createConfirmationCode(
+        confirmationCode,
+        userId,
+      );
+
       this.emailNotificationService
         .sendEmailWithConfirmationCode({
-          login: user.login,
-          email: user.email,
-          code: user.emailConfirmation.confirmationCode,
+          login: login,
+          email: email,
+          code: confirmationCode,
         })
         .catch((e) => console.log('Error send email: ', e));
+
+      return userId;
     }
 
-    await this.usersRepository.save(user);
-
-    return user._id;
+    return await this.userRepository.createUser(
+      login,
+      email,
+      passwordHash,
+      true,
+    );
   }
 }
