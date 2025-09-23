@@ -85,7 +85,8 @@ export class PostQueryRepository {
 
   async getPostById(id: string, userId?: string): Promise<PostViewDto> {
     const res = await this.dataSource.query(
-      'SELECT * FROM public."Posts" WHERE "id" = $1::uuid',
+      `SELECT * FROM public."Posts" WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
+       AND "deletedAt" IS NULL`,
       [id],
     );
 

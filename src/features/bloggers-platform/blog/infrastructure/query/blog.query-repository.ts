@@ -63,7 +63,8 @@ export class BlogQueryRepository {
 
   async getBlogById(id: string): Promise<BlogViewDto> {
     const res = await this.dataSource.query(
-      'SELECT * FROM public."Blogs" WHERE "id" = $1::uuid',
+      `SELECT * FROM public."Blogs" WHERE "id" = $1::uuid AND "blogStatus" <> 'DELETED'
+       AND "deletedAt" IS NULL`,
       [id],
     );
 
