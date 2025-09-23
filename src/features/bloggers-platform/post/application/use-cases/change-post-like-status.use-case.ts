@@ -1,3 +1,4 @@
+/*
 import { ObjectId } from 'mongodb';
 import { BaseLikeStatusInputDto } from '../../../../../core/dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
@@ -98,3 +99,4 @@ export class ChangePostLikeStatusUseCase
     await this.postRepository.save(post);
   }
 }
+*/

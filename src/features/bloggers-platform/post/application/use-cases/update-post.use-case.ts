@@ -1,49 +1,36 @@
-import { ObjectId } from 'mongodb';
-import { PostInputDto } from '../../dto';
+import { UpdatePostForBlogInputDto } from '../../dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PostRepository } from '../../infrastructure';
-import { forwardRef, Inject, NotFoundException } from '@nestjs/common';
-import { BlogRepository } from '../../../blog';
+import { NotFoundException } from '@nestjs/common';
 
 export class UpdatePostCommand {
   constructor(
-    public id: ObjectId,
-    public dto: PostInputDto,
+    public postId: string,
+    public dto: UpdatePostForBlogInputDto,
   ) {}
 }
 
 @CommandHandler(UpdatePostCommand)
 export class UpdatePostUseCase implements ICommandHandler<UpdatePostCommand> {
-  constructor(
-    private postRepository: PostRepository,
-    @Inject(forwardRef(() => BlogRepository))
-    private blogRepository: BlogRepository,
-  ) {}
+  constructor(private postRepository: PostRepository) {}
 
-  async execute(command: UpdatePostCommand): Promise<void> {
+  async execute(command: UpdatePostCommand): Promise<boolean> {
     const {
-      id,
-      dto: { title, content, shortDescription, blogId },
+      postId,
+      dto: { title, content, shortDescription },
     } = command;
 
-    const post = await this.postRepository.findPostById(id);
-    const blog = await this.blogRepository.findBlogById(new ObjectId(blogId));
+    const post = await this.postRepository.findPostById(postId);
 
-    if (!blog) {
-      throw new NotFoundException(`Blog with id ${blogId} not found`);
-    }
     if (!post) {
-      throw new NotFoundException(`Post with id ${id} not found`);
+      throw new NotFoundException(`Post with id ${postId} not found`);
     }
 
-    post.updatePost({
+    return await this.postRepository.updatePost(
       title,
       content,
       shortDescription,
-      blogId,
-      blogName: blog.name,
-    });
-
-    await this.postRepository.save(post);
+      postId,
+    );
   }
 }

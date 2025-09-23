@@ -1,10 +1,10 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BlogRepository } from '../../infrastructure';
+import { isUuidV4 } from '../../../../../utils/uuidValidator';
 
 export class DeleteBlogCommand {
-  constructor(public id: ObjectId) {}
+  constructor(public id: string) {}
 }
 
 @CommandHandler(DeleteBlogCommand)
@@ -12,6 +12,17 @@ export class DeleteBlogUseCase implements ICommandHandler<DeleteBlogCommand> {
   constructor(private blogRepository: BlogRepository) {}
 
   async execute(command: DeleteBlogCommand): Promise<void> {
+    if (!isUuidV4(command.id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const blog = await this.blogRepository.findBlogById(command.id);
 
     if (!blog) {
@@ -25,8 +36,6 @@ export class DeleteBlogUseCase implements ICommandHandler<DeleteBlogCommand> {
       });
     }
 
-    blog.deleteBlog();
-
-    await this.blogRepository.save(blog);
+    await this.blogRepository.deleteBlog(blog.id);
   }
 }

@@ -5,7 +5,6 @@ import {
 } from 'class-validator';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { BlogRepository } from '../../blog';
-import { ObjectId } from 'mongodb';
 import { isValidObjectId } from 'mongoose';
 
 @ValidatorConstraint({ async: true })
@@ -21,7 +20,7 @@ export class BlogExistsConstraint implements ValidatorConstraintInterface {
       return false;
     }
 
-    const blog = await this.blogRepository.findBlogById(new ObjectId(blogId));
+    const blog = await this.blogRepository.findBlogById(blogId);
     return !!blog;
   }
 

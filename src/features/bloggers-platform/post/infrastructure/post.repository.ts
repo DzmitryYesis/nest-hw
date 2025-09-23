@@ -1,24 +1,100 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Post, PostDocument, PostModelType } from '../domain';
-import { ObjectId } from 'mongodb';
-import { PostStatusEnum } from '../../../../constants';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { PostRowDto } from '../dto/view-dto/post-row.dto';
 
 @Injectable()
 export class PostRepository {
-  constructor(
-    @InjectModel(Post.name)
-    private PostModel: PostModelType,
-  ) {}
+  constructor(@InjectDataSource() protected dataSource: DataSource) {}
 
-  async findPostById(id: ObjectId): Promise<PostDocument | null> {
-    return this.PostModel.findOne({
-      _id: id,
-      postStatus: { $ne: PostStatusEnum.DELETED },
-    });
+  async findPostById(id: string): Promise<PostRowDto | null> {
+    const res = await this.dataSource.query(
+      `SELECT
+    p.*,
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  pld."userId",
+                 'login',   pld."login",
+                 'addedAt', pld."addedAt"
+               )
+               ORDER BY pld."addedAt" DESC
+             )
+      FROM public."PostsLikesDislikes" pld
+      WHERE pld."postId" = p."id"
+        AND pld."likeStatus" = 'LIKE'::like_status
+    ), '[]'::json) AS likes,
+
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  pld."userId",
+                 'login',   pld."login",
+                 'addedAt', pld."addedAt"
+               )
+               ORDER BY pld."addedAt" DESC
+             )
+      FROM public."PostsLikesDislikes" pld
+      WHERE pld."postId" = p."id"
+        AND pld."likeStatus" = 'DISLIKE'::like_status
+    ), '[]'::json) AS dislikes,
+
+    COUNT(*) OVER()::int AS total_count
+
+  FROM public."Posts" p
+  WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
+    AND "deletedAt" IS NULL`,
+      [id],
+    );
+
+    if (res.length === 0) {
+      throw new NotFoundException(`Post with id ${id} not found`);
+    }
+
+    return res[0];
   }
 
-  async save(post: PostDocument) {
-    await post.save();
+  async createPostForBlog(
+    title: string,
+    content: string,
+    shortDescription: string,
+    blogId: string,
+    blogName: string,
+  ): Promise<string> {
+    const sql = `INSERT INTO public."Posts" ("title", "content", "shortDescription", "blogId", "blogName")
+                 VALUES ($1, $2, $3, $4, $5)
+                 RETURNING "id"`;
+
+    const params = [title, content, shortDescription, blogId, blogName];
+
+    const res = await this.dataSource.query(sql, params);
+
+    return res[0].id;
+  }
+
+  async updatePost(
+    title: string,
+    content: string,
+    shortDescription: string,
+    postId: string,
+  ): Promise<boolean> {
+    const sql = `UPDATE public."Posts"
+               SET "title" = $1,
+                   "content" = $2,
+                   "shortDescription" = $3
+               WHERE "id" = $4`;
+
+    const params = [title, content, shortDescription, postId];
+
+    const res = await this.dataSource.query(sql, params);
+
+    return res.rowCount > 0;
+  }
+
+  async deletePost(id: string): Promise<void> {
+    await this.dataSource.query(
+      `UPDATE public."Posts" SET "postStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
+      [id],
+    );
   }
 }

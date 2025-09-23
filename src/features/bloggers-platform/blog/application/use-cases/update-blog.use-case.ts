@@ -1,12 +1,12 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BlogRepository } from '../../infrastructure';
 import { BlogInputDto } from '../../dto';
+import { isUuidV4 } from '../../../../../utils/uuidValidator';
 
 export class UpdateBlogCommand {
   constructor(
-    public id: ObjectId,
+    public id: string,
     public dto: BlogInputDto,
   ) {}
 }
@@ -15,7 +15,18 @@ export class UpdateBlogCommand {
 export class UpdateBlogUseCase implements ICommandHandler<UpdateBlogCommand> {
   constructor(private blogRepository: BlogRepository) {}
 
-  async execute(command: UpdateBlogCommand): Promise<void> {
+  async execute(command: UpdateBlogCommand): Promise<boolean> {
+    if (!isUuidV4(command.id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const blog = await this.blogRepository.findBlogById(command.id);
 
     if (!blog) {
@@ -29,8 +40,6 @@ export class UpdateBlogUseCase implements ICommandHandler<UpdateBlogCommand> {
       });
     }
 
-    blog.updateBlog(command.dto);
-
-    await this.blogRepository.save(blog);
+    return await this.blogRepository.updateBlog(blog.id, command.dto);
   }
 }

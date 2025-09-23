@@ -1,10 +1,9 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PostRepository } from '../../infrastructure';
 import { NotFoundException } from '@nestjs/common';
 
 export class GetPostByIdCommand {
-  constructor(public id: ObjectId) {}
+  constructor(public id: string) {}
 }
 
 @CommandHandler(GetPostByIdCommand)
@@ -18,6 +17,6 @@ export class GetPostByIdUseCase implements ICommandHandler<GetPostByIdCommand> {
       throw new NotFoundException(`Post with id ${command.id} not found`);
     }
 
-    return post._id.toString();
+    return post.id;
   }
 }
