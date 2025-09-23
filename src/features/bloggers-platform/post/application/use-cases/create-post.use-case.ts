@@ -1,3 +1,4 @@
+/*
 import { PostInputDto } from '../../dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { PostRepository } from '../../infrastructure';
@@ -25,7 +26,7 @@ export class CreatePostUseCase implements ICommandHandler<CreatePostCommand> {
   async execute(command: CreatePostCommand): Promise<ObjectId | void> {
     const { title, content, shortDescription, blogId } = command.dto;
 
-    const blog = await this.blogRepository.findBlogById(new ObjectId(blogId));
+    const blog = await this.blogRepository.findBlogById(blogId);
 
     if (!blog) {
       throw new NotFoundException(`Blog with id ${blogId} not found`);
@@ -44,3 +45,4 @@ export class CreatePostUseCase implements ICommandHandler<CreatePostCommand> {
     return post._id;
   }
 }
+*/

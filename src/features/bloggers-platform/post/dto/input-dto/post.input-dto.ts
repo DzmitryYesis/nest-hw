@@ -4,10 +4,8 @@ import {
   postShortDescriptionLength,
   postTitleLength,
 } from '../../../../../constants/validate';
-import { IsMongoId, Validate } from 'class-validator';
-import { BlogExistsConstraint } from '../../validators/blog-exist.validator';
 
-export class PostInputDto {
+export class UpdatePostForBlogInputDto {
   @IsStringWithTrim(postTitleLength.minLength, postTitleLength.maxLength)
   title: string;
 
@@ -19,8 +17,4 @@ export class PostInputDto {
 
   @IsStringWithTrim(postContentLength.minLength, postContentLength.maxLength)
   content: string;
-
-  @IsMongoId()
-  @Validate(BlogExistsConstraint)
-  blogId: string;
 }

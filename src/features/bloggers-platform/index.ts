@@ -16,10 +16,8 @@ export {
 export {
   PostRepository,
   PostQueryRepository,
-  PostController,
   PostViewDto,
   PostsQueryParams,
-  PostInputDto,
   CreatePostDomainDto,
   UpdatePostDomainDto,
   NewestLikeViewDto,

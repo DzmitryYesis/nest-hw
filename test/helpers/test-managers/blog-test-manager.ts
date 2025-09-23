@@ -6,7 +6,7 @@ import {
   PostViewDto,
 } from '../../../src/features/bloggers-platform';
 import request from 'supertest';
-import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../src/constants';
+import { BLOGS_SA_API_PATH, POSTS_API_PATH } from '../../../src/constants';
 import { delay } from '../functions';
 
 export class BlogTestManager {
@@ -32,7 +32,7 @@ export class BlogTestManager {
     const blogInputDto = this.createBlogInputDto(index);
 
     const response = await request(this.app.getHttpServer())
-      .post(`/${BLOGS_API_PATH}`)
+      .post(`/${BLOGS_SA_API_PATH}`)
       .send(blogInputDto)
       .auth('admin', 'qwerty')
       .expect(HttpStatus.CREATED);
@@ -55,7 +55,7 @@ export class BlogTestManager {
     const postForBlogInputDto = this.createPostForBlogInputDto(index);
 
     const response = await request(this.app.getHttpServer())
-      .post(`/${BLOGS_API_PATH}/${blogId}/${POSTS_API_PATH.ROOT_URL}`)
+      .post(`/${BLOGS_SA_API_PATH}/${blogId}/${POSTS_API_PATH.ROOT_URL}`)
       .send(postForBlogInputDto)
       .auth('admin', 'qwerty')
       .expect(HttpStatus.CREATED);

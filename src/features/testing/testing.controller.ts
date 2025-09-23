@@ -7,11 +7,7 @@ import { DataSource } from 'typeorm';
 export class TestingController {
   constructor(
     @InjectDataSource() protected dataSource: DataSource,
-    /*@InjectModel(Blog.name)
-    private BlogModel: BlogModelType,
-    @InjectModel(Post.name)
-    private PostModel: PostModelType,
-    @InjectModel(Comment.name)
+    /*@InjectModel(Comment.name)
     private CommentModel: CommentModelType,*/
   ) {}
 
@@ -21,12 +17,25 @@ export class TestingController {
     await this.dataSource.query(
       `TRUNCATE TABLE public."Users" RESTART IDENTITY CASCADE`,
     );
-    //await this.BlogModel.deleteMany({});
-    //await this.PostModel.deleteMany({});
-    //await this.CommentModel.deleteMany({});
     await this.dataSource.query(
       `TRUNCATE TABLE public."Sessions" RESTART IDENTITY CASCADE`,
     );
+    await this.dataSource.query(
+      `TRUNCATE TABLE public."EmailConfirmations" RESTART IDENTITY CASCADE`,
+    );
+    await this.dataSource.query(
+      `TRUNCATE TABLE public."PasswordRecovery" RESTART IDENTITY CASCADE`,
+    );
+    await this.dataSource.query(
+      `TRUNCATE TABLE public."Blogs" RESTART IDENTITY CASCADE`,
+    );
+    await this.dataSource.query(
+      `TRUNCATE TABLE public."Posts" RESTART IDENTITY CASCADE`,
+    );
+    await this.dataSource.query(
+      `TRUNCATE TABLE public."PostsLikesDislikes" RESTART IDENTITY CASCADE`,
+    );
+    //await this.CommentModel.deleteMany({});
     return;
   }
 }

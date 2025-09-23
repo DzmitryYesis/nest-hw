@@ -6,6 +6,7 @@ import {
   ErrorMessage,
   getStringWithLength,
   invalidId,
+  UserTestManager,
 } from './helpers';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
@@ -13,14 +14,18 @@ import { appSetup } from '../src/setup/app.setup';
 import request from 'supertest';
 import {
   BLOGS_API_PATH,
+  BLOGS_SA_API_PATH,
   POSTS_API_PATH,
   UserLikeStatus,
 } from '../src/constants';
 import { BlogViewDto, PostViewDto } from '../src/features/bloggers-platform';
+import { PostTestManager } from './helpers/test-managers';
 
 describe('Blogs controller (e2e)', () => {
   let app: INestApplication;
+  let postTestManager: PostTestManager;
   let blogTestManager: BlogTestManager;
+  let userTestManager: UserTestManager;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -34,6 +39,13 @@ describe('Blogs controller (e2e)', () => {
     await app.init();
 
     blogTestManager = new BlogTestManager(app);
+    userTestManager = new UserTestManager(app);
+
+    postTestManager = new PostTestManager(
+      app,
+      blogTestManager,
+      userTestManager,
+    );
 
     await deleteAllData(app);
   });
@@ -46,11 +58,12 @@ describe('Blogs controller (e2e)', () => {
     await app.close();
   });
 
-  //GET /blogs
+  //GET /sa/blogs
   describe('Get blogs', () => {
     it('should return response with default queries data and empty Array for items', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}`)
+        .get(`/${BLOGS_SA_API_PATH}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -68,7 +81,8 @@ describe('Blogs controller (e2e)', () => {
       await blogTestManager.createSeveralBlogs(5);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?sortBy=ert`)
+        .get(`/${BLOGS_SA_API_PATH}?sortBy=ert`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
@@ -92,8 +106,9 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}?sortBy=name&sortDirection=wer&pageSize=-2&pageNumber=dfg`,
+          `/${BLOGS_SA_API_PATH}?sortBy=name&sortDirection=wer&pageSize=-2&pageNumber=dfg`,
         )
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
@@ -124,7 +139,8 @@ describe('Blogs controller (e2e)', () => {
       const blog1 = await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}`)
+        .get(`/${BLOGS_SA_API_PATH}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -142,7 +158,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(3);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}`)
+        .get(`/${BLOGS_SA_API_PATH}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -160,7 +177,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}`)
+        .get(`/${BLOGS_SA_API_PATH}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -179,7 +197,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?pageSize=20`)
+        .get(`/${BLOGS_SA_API_PATH}?pageSize=20`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -198,7 +217,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?pageSize=20&sortDirection=asc`)
+        .get(`/${BLOGS_SA_API_PATH}?pageSize=20&sortDirection=asc`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -217,7 +237,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?pageSize=3&pageNumber=4&sortDirection=asc`)
+        .get(`/${BLOGS_SA_API_PATH}?pageSize=3&pageNumber=4&sortDirection=asc`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -236,7 +257,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?sortDirection=asc&searchNameTerm=2`)
+        .get(`/${BLOGS_SA_API_PATH}?sortDirection=asc&searchNameTerm=2`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -255,7 +277,8 @@ describe('Blogs controller (e2e)', () => {
       const blogs = await blogTestManager.createSeveralBlogs(15);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}?sortBy=name`)
+        .get(`/${BLOGS_SA_API_PATH}?sortBy=name`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -279,9 +302,24 @@ describe('Blogs controller (e2e)', () => {
     it("shouldn't get blog by invalid blogId", async () => {
       await blogTestManager.createBlog(1);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get(`/${BLOGS_API_PATH}/${invalidId}`)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it("shouldn't get blog by incorrect blogId", async () => {
@@ -320,22 +358,39 @@ describe('Blogs controller (e2e)', () => {
     });
   });
 
-  //GET /blogs/:id/posts
+  //GET /sa/blogs/:id/posts
   describe('Get posts for blog', () => {
-    it('should return response with NOT_FOUND_404 for invalid blogId', async () => {
+    it('should return response with BAD_REQUEST for invalid blogId', async () => {
       await blogTestManager.createBlog(1);
 
-      await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
-        .expect(HttpStatus.NOT_FOUND);
+      const response = await request(app.getHttpServer())
+        .get(`/${BLOGS_SA_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Basic ${authBasic}`)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response with BAD_REQUEST for incorrect blogId', async () => {
       await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
-        .expect(HttpStatus.NOT_FOUND);
+        .get(`/${BLOGS_SA_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Basic ${authBasic}`)
+        .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
 
@@ -357,7 +412,8 @@ describe('Blogs controller (e2e)', () => {
       const blog = await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .get(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -376,7 +432,8 @@ describe('Blogs controller (e2e)', () => {
       const post = await blogTestManager.createPostForBlog(1, blog.id);
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .get(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -397,8 +454,9 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?sortBy=er&sortDirection=df&pageNumber=-4&pageSize=g`,
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?sortBy=er&sortDirection=df&pageNumber=-4&pageSize=g`,
         )
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
@@ -437,7 +495,8 @@ describe('Blogs controller (e2e)', () => {
       );
 
       const response = await request(app.getHttpServer())
-        .get(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .get(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -461,8 +520,9 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=30&sortBy=title`,
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=30&sortBy=title`,
         )
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -488,8 +548,9 @@ describe('Blogs controller (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=5&pageNumber=3&sortDirection=asc`,
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}?pageSize=5&pageNumber=3&sortDirection=asc`,
         )
+        .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.OK);
 
       console.log(response.body);
@@ -505,13 +566,13 @@ describe('Blogs controller (e2e)', () => {
     });
   });
 
-  //POST /blogs
+  //POST /sa/blogs
   describe('Create blog', () => {
     it('should return error NOT_AUTH_401 when try to create blog', async () => {
       const blogInputDto = blogTestManager.createBlogInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}`)
+        .post(`/${BLOGS_SA_API_PATH}`)
         .set('authorization', `Basic bla-bla`)
         .send(blogInputDto)
         .expect(HttpStatus.UNAUTHORIZED);
@@ -521,7 +582,7 @@ describe('Blogs controller (e2e)', () => {
       const blogInputDto = blogTestManager.createBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}`)
+        .post(`/${BLOGS_SA_API_PATH}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({
           ...blogInputDto,
@@ -566,7 +627,7 @@ describe('Blogs controller (e2e)', () => {
       const blogInputDto = blogTestManager.createBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}`)
+        .post(`/${BLOGS_SA_API_PATH}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ ...blogInputDto, websiteUrl: 'sgh' })
         .expect(HttpStatus.BAD_REQUEST);
@@ -591,7 +652,7 @@ describe('Blogs controller (e2e)', () => {
       const blog = blogTestManager.createBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}`)
+        .post(`/${BLOGS_SA_API_PATH}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(blog)
         .expect(HttpStatus.CREATED);
@@ -607,14 +668,14 @@ describe('Blogs controller (e2e)', () => {
     });
   });
 
-  //POST /blogs/:id/posts
+  //POST /sa/blogs/:id/posts
   describe('Create post for blog', () => {
     it("shouldn't create post for blog without auth", async () => {
       const blog = await blogTestManager.createBlog(1);
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .post(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic bla-bla`)
         .send(postInputDto)
         .expect(HttpStatus.UNAUTHORIZED);
@@ -625,7 +686,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${345}/${POSTS_API_PATH.ROOT_URL}`)
+        .post(`/${BLOGS_SA_API_PATH}/${345}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
         .expect(HttpStatus.BAD_REQUEST);
@@ -650,18 +711,33 @@ describe('Blogs controller (e2e)', () => {
       await blogTestManager.createBlog(1);
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
-      await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
+      const response = await request(app.getHttpServer())
+        .post(`/${BLOGS_SA_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response BAD_REQUEST_400 with fields title, content, shortDescription', async () => {
       const blog = await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .post(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ title: '', content: '', shortDescription: '' })
         .expect(HttpStatus.BAD_REQUEST);
@@ -702,7 +778,7 @@ describe('Blogs controller (e2e)', () => {
       const post = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .post(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ ...post, content: getStringWithLength(1001) })
         .expect(HttpStatus.BAD_REQUEST);
@@ -728,7 +804,7 @@ describe('Blogs controller (e2e)', () => {
       const postInputDto = blogTestManager.createPostForBlogInputDto(1);
 
       const response = await request(app.getHttpServer())
-        .post(`/${BLOGS_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
+        .post(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(postInputDto)
         .expect(HttpStatus.CREATED);
@@ -751,28 +827,43 @@ describe('Blogs controller (e2e)', () => {
     });
   });
 
-  //PUT /blogs/:id
+  //PUT /sa/blogs/:id
   describe('Update blog', () => {
     it("shouldn't update blog without auth", async () => {
       const blog = await blogTestManager.createBlog(1);
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
       await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${blog.id}`)
+        .put(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic bla-bla`)
         .send(blogUpdateInputDto)
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it("shouldn't update blog with invalid blogId", async () => {
+    it('should return BAD_REQUEST for update blog with invalid blogId', async () => {
       await blogTestManager.createBlog(1);
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
-      await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${invalidId}`)
+      const response = await request(app.getHttpServer())
+        .put(`/${BLOGS_SA_API_PATH}/${invalidId}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(blogUpdateInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it("shouldn't update blog with incorrect blogId", async () => {
@@ -780,7 +871,7 @@ describe('Blogs controller (e2e)', () => {
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
       const response = await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${345}`)
+        .put(`/${BLOGS_SA_API_PATH}/${345}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(blogUpdateInputDto)
         .expect(HttpStatus.BAD_REQUEST);
@@ -806,7 +897,7 @@ describe('Blogs controller (e2e)', () => {
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
       const response = await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${blog.id}`)
+        .put(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ ...blogUpdateInputDto, name: '', websiteUrl: '' })
         .expect(HttpStatus.BAD_REQUEST);
@@ -836,7 +927,7 @@ describe('Blogs controller (e2e)', () => {
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
       const response = await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${blog.id}`)
+        .put(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .send({ ...blogUpdateInputDto, name: getStringWithLength(16) })
         .expect(HttpStatus.BAD_REQUEST);
@@ -862,7 +953,7 @@ describe('Blogs controller (e2e)', () => {
       const blogUpdateInputDto = blogTestManager.createBlogInputDto(2);
 
       await request(app.getHttpServer())
-        .put(`/${BLOGS_API_PATH}/${blog.id}`)
+        .put(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .send(blogUpdateInputDto)
         .expect(HttpStatus.NO_CONTENT);
@@ -877,31 +968,220 @@ describe('Blogs controller (e2e)', () => {
     });
   });
 
-  //DELETE /blogs/:id
+  //PUT /sa/blogs/:id/posts/:id
+  describe('Update post', () => {
+    it("shouldn't update post without auth", async () => {
+      const { post, blog } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic bla-bla`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("shouldn't update post with invalid postId", async () => {
+      const { blog } = await postTestManager.createPost(1, 1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      await request(app.getHttpServer())
+        .put(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH}/${invalidId}`)
+        .set('authorization', `Basic ${authBasic}`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it("shouldn't update post with incorrect postId", async () => {
+      const { blog } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      const response = await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${345}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it('should return response with status BAD_REQUEST_400 and error for fields title, content', async () => {
+      const { blog, post } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      const response = await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .send({ ...postInputDtoForUpdate, title: '', content: '' })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(2);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'title',
+            message: expect.any(String),
+          }),
+          expect.objectContaining({
+            field: 'content',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it('should return response with status BAD_REQUEST for invalid blogId', async () => {
+      const { post } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      const response = await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      response.body.errorsMessages.forEach((error: ErrorMessage) => {
+        expect(error).toHaveProperty('field');
+        expect(error).toHaveProperty('message');
+        expect(typeof error.field).toBe('string');
+        expect(typeof error.message).toBe('string');
+      });
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'blogId',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it('should return response with status BAD_REQUEST_400 and error for fields blogId', async () => {
+      const { post } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      const response = await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${invalidId}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'blogId',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it('should update post', async () => {
+      const { blog, post } = await postTestManager.createPost(1);
+      const postInputDtoForUpdate = postTestManager.createPostInputDto(2);
+
+      await request(app.getHttpServer())
+        .put(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .send(postInputDtoForUpdate)
+        .expect(HttpStatus.NO_CONTENT);
+
+      const response = await request(app.getHttpServer())
+        .get(`/${POSTS_API_PATH.ROOT_URL}/${post.id}`)
+        .expect(HttpStatus.OK);
+
+      console.log(response.body);
+
+      expect(response.body).toStrictEqual({
+        ...post,
+        ...postInputDtoForUpdate,
+      });
+    });
+  });
+
+  //DELETE /sa/blogs/:id
   describe('Delete blog', () => {
     it("shouldn't delete blog without auth", async () => {
       const blog = await blogTestManager.createBlog(1);
 
       await request(app.getHttpServer())
-        .delete(`/${BLOGS_API_PATH}/${blog.id}`)
+        .delete(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic bla-bla`)
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it("shouldn't delete blog by invalid blogId", async () => {
+    it('should return BAD_REQUEST for delete blog by invalid blogId', async () => {
       await blogTestManager.createBlog(1);
 
-      await request(app.getHttpServer())
-        .delete(`/${BLOGS_API_PATH}/${invalidId}`)
+      const response = await request(app.getHttpServer())
+        .delete(`/${BLOGS_SA_API_PATH}/${invalidId}`)
         .set('authorization', `Basic ${authBasic}`)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it("shouldn't delete blog by incorrect blogId", async () => {
       await blogTestManager.createBlog(1);
 
       const response = await request(app.getHttpServer())
-        .delete(`/${BLOGS_API_PATH}/${345}`)
+        .delete(`/${BLOGS_SA_API_PATH}/${345}`)
         .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -925,14 +1205,91 @@ describe('Blogs controller (e2e)', () => {
       const blog = await blogTestManager.createBlog(1);
 
       await request(app.getHttpServer())
-        .delete(`/${BLOGS_API_PATH}/${blog.id}`)
+        .delete(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.NO_CONTENT);
 
       await request(app.getHttpServer())
-        .delete(`/${BLOGS_API_PATH}/${blog.id}`)
+        .delete(`/${BLOGS_SA_API_PATH}/${blog.id}`)
         .set('authorization', `Basic ${authBasic}`)
         .expect(HttpStatus.NOT_FOUND);
+    });
+  });
+
+  //DELETE /sa/blogs/:id/posts/:id
+  describe('Delete posts by id', () => {
+    it("shouldn't delete post without auth", async () => {
+      const { post, blog } = await postTestManager.createPost(1, 1);
+
+      await request(app.getHttpServer())
+        .delete(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic bla-bla`)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it("shouldn't delete post by invalid postId", async () => {
+      const { blog } = await postTestManager.createPost(1, 1);
+
+      const response = await request(app.getHttpServer())
+        .delete(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${invalidId}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it("shouldn't delete post by incorrect postId", async () => {
+      const { blog } = await postTestManager.createPost(1, 1);
+
+      const response = await request(app.getHttpServer())
+        .delete(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${2345}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
+    });
+
+    it('delete post by postId', async () => {
+      const { post, blog } = await postTestManager.createPost(1, 1);
+
+      await request(app.getHttpServer())
+        .delete(
+          `/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}/${post.id}`,
+        )
+        .set('authorization', `Basic ${authBasic}`)
+        .expect(HttpStatus.NO_CONTENT);
     });
   });
 });

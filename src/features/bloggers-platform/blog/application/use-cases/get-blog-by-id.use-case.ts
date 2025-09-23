@@ -1,10 +1,9 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
 import { BlogRepository } from '../../infrastructure';
 
 export class GetBlogByIdCommand {
-  constructor(public id: ObjectId) {}
+  constructor(public id: string) {}
 }
 
 @CommandHandler(GetBlogByIdCommand)
@@ -25,6 +24,6 @@ export class GetBlogByIdUseCase implements ICommandHandler<GetBlogByIdCommand> {
       });
     }
 
-    return blog._id.toString();
+    return blog.id;
   }
 }

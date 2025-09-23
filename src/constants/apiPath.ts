@@ -1,5 +1,6 @@
 export const USERS_API_PATH = 'sa/users';
 export const BLOGS_API_PATH = 'blogs';
+export const BLOGS_SA_API_PATH = 'sa/blogs';
 
 export const COMMENTS_API_PATH = {
   ROOT_URL: 'comments',
@@ -7,6 +8,7 @@ export const COMMENTS_API_PATH = {
 };
 
 export const POSTS_API_PATH = {
+  SUPER_ADMIN: 'sa/posts',
   ROOT_URL: 'posts',
   LIKE_STATUS: 'like-status',
 };

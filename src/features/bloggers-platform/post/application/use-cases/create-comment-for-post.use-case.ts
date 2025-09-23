@@ -13,7 +13,7 @@ import { NotFoundException } from '@nestjs/common';
 
 export class CreateCommentForPostCommand {
   constructor(
-    public id: ObjectId,
+    public id: string,
     public userId: string,
     public dto: CommentInputDto,
   ) {}

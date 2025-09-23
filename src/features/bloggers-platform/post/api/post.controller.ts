@@ -1,3 +1,4 @@
+/*
 import {
   Body,
   Controller,
@@ -13,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PostQueryRepository } from '../infrastructure';
-import { PostInputDto, PostsQueryParams, PostViewDto } from '../dto';
+import { PostsQueryParams, PostViewDto } from '../dto';
 import {
   BasicAuthGuard,
   BearerAuthGuard,
@@ -57,7 +58,7 @@ export class PostController {
   @Get(':id')
   async getPostById(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
   ): Promise<PostViewDto> {
     return this.postQueryRepository.getPostById(id, req.userId);
   }
@@ -65,7 +66,7 @@ export class PostController {
   @Get(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async getCommentsForPost(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
@@ -130,3 +131,4 @@ export class PostController {
     return await this.commandBus.execute(new DeletePostCommand(id));
   }
 }
+*/
