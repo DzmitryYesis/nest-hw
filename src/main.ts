@@ -16,6 +16,10 @@ async function bootstrap() {
 
   appSetup(app);
 
+  app.getHttpAdapter().get('/', (req, res) => {
+    res.send({ message: 'Server is running fine 🚀' });
+  });
+
   await app.listen(SETTINGS.PORT, () => {
     console.log(`...server started in port ${SETTINGS.PORT}`);
   });

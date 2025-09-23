@@ -14,6 +14,7 @@ import { CreatePostForBlogUseCase } from './blog/application/use-cases/create-po
 import { DeletePostUseCase } from './post/application/use-cases/delete-post.use-case';
 import { GetPostByIdUseCase } from './post/application/use-cases/get-post-by-id.use-case';
 import { UpdatePostUseCase } from './post/application/use-cases/update-post.use-case';
+import { PostSAController } from './post/api/post.sa.controller';
 
 const useCases = [
   CreateBlogUseCase,
@@ -39,7 +40,7 @@ const useCases = [
     BlogController,
     BlogSAController,
     //PostController,
-    //PostSAController,
+    PostSAController,
     //CommentController,
   ],
   providers: [
