@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { BlogQueryRepository } from '../infrastructure';
 import { PaginatedViewDto } from '../../../../core';
 import { BlogsQueryParams, BlogViewDto } from '../dto';
@@ -7,6 +13,7 @@ import { BLOGS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 import { CommandBus } from '@nestjs/cqrs';
 import { GetBlogByIdCommand } from '../application/use-cases/get-blog-by-id.use-case';
 import { Public } from '../../../../core/decorators';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 
 @Public()
 @Controller(BLOGS_API_PATH)
@@ -28,6 +35,17 @@ export class BlogController {
 
   @Get(':id')
   async getBlogById(@Param('id') id: string): Promise<BlogViewDto> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     return this.blogQueryRepository.getBlogById(id);
   }
 
@@ -37,6 +55,18 @@ export class BlogController {
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
+
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const blogId = await this.commandBus.execute(new GetBlogByIdCommand(id));
 
     return this.postQueryRepository.getPostsForBlog(blogId!, queryParams);

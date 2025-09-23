@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -35,6 +36,7 @@ import { UpdateBlogCommand } from '../application/use-cases/update-blog.use-case
 import { DeleteBlogCommand } from '../application/use-cases/delete-blog.use-case';
 import { UpdatePostCommand } from '../../post/application/use-cases/update-post.use-case';
 import { DeletePostCommand } from '../../post/application/use-cases/delete-post.use-case';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 
 @UseGuards(BasicAuthGuard)
 @Controller(BLOGS_SA_API_PATH)
@@ -61,6 +63,18 @@ export class BlogSAController {
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
+
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const blogId = await this.commandBus.execute(new GetBlogByIdCommand(id));
 
     return this.postQueryRepository.getPostsForBlog(
@@ -82,6 +96,17 @@ export class BlogSAController {
     @Param('id') blogId: string,
     @Body() data: PostForBlogInputDto,
   ): Promise<PostViewDto> {
+    if (!isUuidV4(blogId)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const postId = await this.commandBus.execute(
       new CreatePostForBlogCommand(blogId, data),
     );
@@ -105,6 +130,27 @@ export class BlogSAController {
     @Param('postId') postId: string,
     @Body() data: UpdatePostForBlogInputDto,
   ): Promise<void> {
+    if (!isUuidV4(blogId)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'blogId',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+    if (!isUuidV4(postId)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     await this.commandBus.execute(new GetBlogByIdCommand(blogId));
     return await this.commandBus.execute(new UpdatePostCommand(postId, data));
   }
@@ -121,6 +167,27 @@ export class BlogSAController {
     @Param('blogId') blogId: string,
     @Param('postId') postId: string,
   ): Promise<void> {
+    if (!isUuidV4(blogId)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+    if (!isUuidV4(postId)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     await this.commandBus.execute(new GetBlogByIdCommand(blogId));
     return await this.commandBus.execute(new DeletePostCommand(postId));
   }

@@ -19,7 +19,7 @@ export class PostQueryRepository {
       shortDescription: '"shortDescription" COLLATE "C"',
       content: '"content" COLLATE "C"',
       blogId: '"blogId"',
-      blogName: '"blogName"',
+      blogName: '"blogName" COLLATE "C"',
       createdAt: '"createdAt"',
     };
     const orderBy = sortMap[sortBy];
@@ -94,10 +94,8 @@ export class PostQueryRepository {
     }
     const post = {
       ...res[0],
-      extendedLikesInfo: {
-        likes: [],
-        dislikes: [],
-      },
+      likes: [],
+      dislikes: [],
     };
 
     return PostViewDto.mapToView(post, userId);

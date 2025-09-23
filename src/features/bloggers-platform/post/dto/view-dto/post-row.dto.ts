@@ -10,8 +10,6 @@ export class PostRowDto {
   createdAt: string;
   updatedAt: string;
   postStatus: string;
-  extendedLikesInfo: {
-    likes: BaseLikesDislikesDBData[];
-    dislikes: BaseLikesDislikesDBData[];
-  };
+  likes: BaseLikesDislikesDBData[];
+  dislikes: BaseLikesDislikesDBData[];
 }

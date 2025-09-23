@@ -23,8 +23,8 @@ export class PostViewDto {
     dto.createdAt = new Date(post.createdAt);
 
     dto.extendedLikesInfo = new PostsLikesDislikesInfoViewDto(
-      post.extendedLikesInfo.likes,
-      post.extendedLikesInfo.dislikes,
+      post.likes,
+      post.dislikes,
       userId,
     );
 

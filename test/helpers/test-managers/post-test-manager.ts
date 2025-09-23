@@ -1,12 +1,16 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import {
   BlogViewDto,
-  PostInputDto,
+  PostForBlogInputDto,
   PostViewDto,
 } from '../../../src/features/bloggers-platform';
 import { BlogTestManager } from './blog-test-manager';
 import request from 'supertest';
-import { COMMENTS_API_PATH, POSTS_API_PATH } from '../../../src/constants';
+import {
+  BLOGS_SA_API_PATH,
+  COMMENTS_API_PATH,
+  POSTS_API_PATH,
+} from '../../../src/constants';
 import { delay } from 'rxjs';
 import {
   CommentInputDto,
@@ -22,12 +26,11 @@ export class PostTestManager {
     private userTestManager: UserTestManager,
   ) {}
 
-  public createPostInputDto(index: number, blogId: string): PostInputDto {
+  public createPostInputDto(index: number): PostForBlogInputDto {
     return {
       title: `post_${index}`,
       content: `content_${index}`,
       shortDescription: `shortDescription_${index}`,
-      blogId,
     };
   }
 
@@ -42,10 +45,10 @@ export class PostTestManager {
     blogIndex: number = 1,
   ): Promise<{ post: PostViewDto; blog: BlogViewDto }> {
     const blog = await this.blogTestManager.createBlog(blogIndex);
-    const postInputDto = this.createPostInputDto(index, blog.id);
+    const postInputDto = this.createPostInputDto(index);
 
     const response = await request(this.app.getHttpServer())
-      .post(`/${POSTS_API_PATH.ROOT_URL}`)
+      .post(`/${BLOGS_SA_API_PATH}/${blog.id}/${POSTS_API_PATH.ROOT_URL}`)
       .send(postInputDto)
       .auth('admin', 'qwerty')
       .expect(HttpStatus.CREATED);

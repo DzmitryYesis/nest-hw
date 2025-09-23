@@ -1,8 +1,15 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { PostQueryRepository } from '../infrastructure';
 import { PostsQueryParams, PostViewDto } from '../dto';
 import { PaginatedViewDto } from '../../../../core';
 import { POSTS_API_PATH } from '../../../../constants';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 
 @Controller(POSTS_API_PATH.ROOT_URL)
 export class PostSAController {
@@ -19,6 +26,17 @@ export class PostSAController {
 
   @Get(':id')
   async getPostById(@Param('id') id: string): Promise<PostViewDto> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     return this.postQueryRepository.getPostById(id);
   }
 }
