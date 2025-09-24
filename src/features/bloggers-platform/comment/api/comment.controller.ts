@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { CommentQueryRepository } from '../infrastructure';
 import { CommentInputDto, CommentViewDto } from '../dto';
-import { Types } from 'mongoose';
 import { BearerAuthGuard } from '../../../../core';
 import { Public } from '../../../../core/decorators';
 import { COMMENTS_API_PATH } from '../../../../constants';
@@ -32,18 +31,15 @@ export class CommentController {
 
   @Public()
   @Get(':id')
-  async getCommentById(
-    @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
-  ): Promise<CommentViewDto> {
-    return this.commentQueryRepository.getCommentById(id, req.userId);
+  async getCommentById(@Param('id') id: string): Promise<CommentViewDto> {
+    return this.commentQueryRepository.getCommentById(id);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateComment(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
     @Body() data: CommentInputDto,
   ): Promise<void> {
     return await this.commandBus.execute(
@@ -55,7 +51,7 @@ export class CommentController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async changeLikeStatus(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
     @Body() data: BaseLikeStatusInputDto,
   ): Promise<void> {
     return await this.commandBus.execute(
@@ -67,7 +63,7 @@ export class CommentController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteComment(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
   ): Promise<void> {
     return await this.commandBus.execute(
       new DeleteCommentCommand(id, req.userId),

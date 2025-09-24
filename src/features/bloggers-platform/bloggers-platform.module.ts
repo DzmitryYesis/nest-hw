@@ -14,7 +14,17 @@ import { CreatePostForBlogUseCase } from './blog/application/use-cases/create-po
 import { DeletePostUseCase } from './post/application/use-cases/delete-post.use-case';
 import { GetPostByIdUseCase } from './post/application/use-cases/get-post-by-id.use-case';
 import { UpdatePostUseCase } from './post/application/use-cases/update-post.use-case';
-import { PostSAController } from './post/api/post.sa.controller';
+import { PostController } from './post/api/post.controller';
+import { UpdateCommentUseCase } from './comment/application/use-cases/update-comment.use-case';
+import { DeleteCommentUseCase } from './comment/application/use-cases/delete-comment.use-case';
+import { ChangeCommentLikeStatusUseCase } from './comment/application/use-cases/change-comment-like-status.use-case';
+import { ChangePostLikeStatusUseCase } from './post/application/use-cases/change-post-like-status.use-case';
+import { CreateCommentForPostUseCase } from './post/application/use-cases/create-comment-for-post.use-case';
+import {
+  CommentController,
+  CommentQueryRepository,
+  CommentRepository,
+} from './comment';
 
 const useCases = [
   CreateBlogUseCase,
@@ -22,15 +32,15 @@ const useCases = [
   GetBlogByIdUseCase,
   UpdateBlogUseCase,
   DeleteBlogUseCase,
-  //ChangePostLikeStatusUseCase,
-  //CreateCommentForPostUseCase,
+  ChangePostLikeStatusUseCase,
+  CreateCommentForPostUseCase,
   //CreatePostUseCase,
   DeletePostUseCase,
   GetPostByIdUseCase,
   UpdatePostUseCase,
-  //UpdateCommentUseCase,
-  //DeleteCommentUseCase,
-  //ChangeCommentLikeStatusUseCase,
+  UpdateCommentUseCase,
+  DeleteCommentUseCase,
+  ChangeCommentLikeStatusUseCase,
 ];
 
 //TODO create method for logic when try to find entity(create common service where try to find entity)
@@ -39,9 +49,8 @@ const useCases = [
   controllers: [
     BlogController,
     BlogSAController,
-    //PostController,
-    PostSAController,
-    //CommentController,
+    PostController,
+    CommentController,
   ],
   providers: [
     BlogExistsConstraint,
@@ -49,8 +58,8 @@ const useCases = [
     BlogQueryRepository,
     PostRepository,
     PostQueryRepository,
-    //CommentRepository,
-    //CommentQueryRepository,
+    CommentRepository,
+    CommentQueryRepository,
     ...useCases,
   ],
   exports: [],
