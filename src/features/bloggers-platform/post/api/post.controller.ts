@@ -39,15 +39,19 @@ export class PostController {
 
   @Get()
   async getAllPosts(
+    @Req() req: Request & { userId: string },
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const queryParams = new PostsQueryParams(query);
 
-    return this.postQueryRepository.getAllPosts(queryParams);
+    return this.postQueryRepository.getAllPosts(queryParams, req.userId);
   }
 
   @Get(':id')
-  async getPostById(@Param('id') id: string): Promise<PostViewDto> {
+  async getPostById(
+    @Req() req: Request & { userId: string },
+    @Param('id') id: string,
+  ): Promise<PostViewDto> {
     if (!isUuidV4(id)) {
       throw new BadRequestException({
         errorsMessages: [
@@ -59,7 +63,7 @@ export class PostController {
       });
     }
 
-    return this.postQueryRepository.getPostById(id);
+    return this.postQueryRepository.getPostById(id, req.userId);
   }
 
   @Get(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
@@ -69,6 +73,18 @@ export class PostController {
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
+
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const postId = await this.commandBus.execute(new GetPostByIdCommand(id));
 
     return this.commentsQueryRepository.getCommentsForPost(
@@ -85,6 +101,17 @@ export class PostController {
     @Param('id') id: string,
     @Body() date: CommentInputDto,
   ): Promise<CommentViewDto> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const commentId = await this.commandBus.execute(
       new CreateCommentForPostCommand(id, req.userId, date),
     );
@@ -100,6 +127,17 @@ export class PostController {
     @Param('id') id: string,
     @Body() data: BaseLikeStatusInputDto,
   ): Promise<void> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     return await this.commandBus.execute(
       new ChangePostLikeStatusCommand(req.userId, id, data),
     );

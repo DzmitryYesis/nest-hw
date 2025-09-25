@@ -85,7 +85,38 @@ export class PostQueryRepository {
 
   async getPostById(id: string, userId?: string): Promise<PostViewDto> {
     const res = await this.dataSource.query(
-      `SELECT * FROM public."Posts" WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
+      `SELECT
+    p.*,
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  pld."userId",
+                 'login',   pld."login",
+                 'addedAt', pld."addedAt"
+               )
+               ORDER BY pld."addedAt" DESC
+             )
+      FROM public."PostsLikesDislikes" pld
+      WHERE pld."postId" = p."id"
+        AND pld."likeStatus" = 'LIKE'::like_status
+    ), '[]'::json) AS likes,
+
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  pld."userId",
+                 'login',   pld."login",
+                 'addedAt', pld."addedAt"
+               )
+               ORDER BY pld."addedAt" DESC
+             )
+      FROM public."PostsLikesDislikes" pld
+      WHERE pld."postId" = p."id"
+        AND pld."likeStatus" = 'DISLIKE'::like_status
+    ), '[]'::json) AS dislikes
+  
+  FROM public."Posts" p
+   WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
        AND "deletedAt" IS NULL`,
       [id],
     );
@@ -93,13 +124,8 @@ export class PostQueryRepository {
     if (res.length === 0) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
-    const post = {
-      ...res[0],
-      likes: [],
-      dislikes: [],
-    };
 
-    return PostViewDto.mapToView(post, userId);
+    return PostViewDto.mapToView(res[0], userId);
   }
 
   async getPostsForBlog(

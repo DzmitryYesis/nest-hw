@@ -10,8 +10,40 @@ export class CommentQueryRepository {
 
   async getCommentById(id: string, userId?: string): Promise<CommentViewDto> {
     const res = await this.dataSource.query(
-      `SELECT * FROM public."Comments" WHERE "id" = $1::uuid AND "commentStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
+      `
+  SELECT 
+    c.*,
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  cld."userId",
+                 'addedAt', cld."addedAt"
+               )
+               ORDER BY cld."addedAt" DESC
+             )
+      FROM public."CommentsLikesDislikes" cld
+      WHERE cld."commentId" = c."id"
+        AND cld."likeStatus" = 'LIKE'::like_status
+    ), '[]'::json) AS likes,
+
+    COALESCE((
+      SELECT json_agg(
+               json_build_object(
+                 'userId',  cld."userId",
+                 'addedAt', cld."addedAt"
+               )
+               ORDER BY cld."addedAt" DESC
+             )
+      FROM public."CommentsLikesDislikes" cld
+      WHERE cld."commentId" = c."id"
+        AND cld."likeStatus" = 'DISLIKE'::like_status
+    ), '[]'::json) AS dislikes
+
+  FROM public."Comments" c 
+  WHERE c."id" = $1::uuid
+    AND c."commentStatus" <> 'DELETED'
+    AND c."deletedAt" IS NULL
+  `,
       [id],
     );
 
@@ -69,7 +101,7 @@ export class CommentQueryRepository {
                ORDER BY cld."addedAt" DESC
              )
       FROM public."CommentsLikesDislikes" cld
-      WHERE cld."commentId" = p."id"
+      WHERE cld."commentId" = c."id"
         AND cld."likeStatus" = 'DISLIKE'::like_status
     ), '[]'::json) AS dislikes,
 

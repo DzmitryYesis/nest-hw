@@ -21,7 +21,7 @@ export class PostsLikesDislikesInfoViewDto {
       userId,
     );
     this.newestLikes = likes
-      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())
+      .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
       .slice(0, 3)
       .map((like) => new NewestLikeViewDto(like));
   }
