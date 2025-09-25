@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Query,
+  Req,
 } from '@nestjs/common';
 import { BlogQueryRepository } from '../infrastructure';
 import { PaginatedViewDto } from '../../../../core';
@@ -51,6 +52,7 @@ export class BlogController {
 
   @Get(`:id/${POSTS_API_PATH.ROOT_URL}`)
   async getPostsForBlog(
+    @Req() req: Request & { userId: string },
     @Param('id') id: string,
     @Query() query: PostsQueryParams,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
@@ -69,6 +71,10 @@ export class BlogController {
 
     const blogId = await this.commandBus.execute(new GetBlogByIdCommand(id));
 
-    return this.postQueryRepository.getPostsForBlog(blogId!, queryParams);
+    return this.postQueryRepository.getPostsForBlog(
+      blogId!,
+      queryParams,
+      req.userId,
+    );
   }
 }
