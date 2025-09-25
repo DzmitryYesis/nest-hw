@@ -41,7 +41,7 @@ export class CommentRepository {
     await this.dataSource.query(
       `INSERT INTO "CommentsLikesDislikes" ("commentId", "userId", "addedAt", "likeStatus")
        VALUES ($1, $2, NOW(), $3)
-       ON CONFLICT ("postId", "userId")
+       ON CONFLICT ("commentId", "userId")
        DO UPDATE SET
        "likeStatus" = EXCLUDED."likeStatus",
        "addedAt"    = NOW()`,
