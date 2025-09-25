@@ -1,8 +1,7 @@
-/*
 import {
+  BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -15,26 +14,19 @@ import {
 } from '@nestjs/common';
 import { PostQueryRepository } from '../infrastructure';
 import { PostsQueryParams, PostViewDto } from '../dto';
-import {
-  BasicAuthGuard,
-  BearerAuthGuard,
-  PaginatedViewDto,
-} from '../../../../core';
+import { BearerAuthGuard, PaginatedViewDto } from '../../../../core';
 import {
   CommentInputDto,
   CommentQueryRepository,
   CommentsQueryParams,
   CommentViewDto,
 } from '../../comment';
-import { Types } from 'mongoose';
 import { COMMENTS_API_PATH, POSTS_API_PATH } from '../../../../constants';
 import { BaseLikeStatusInputDto } from '../../../../core/dto';
 import { CommandBus } from '@nestjs/cqrs';
 import { GetPostByIdCommand } from '../application/use-cases/get-post-by-id.use-case';
-import { CreatePostCommand } from '../application/use-cases/create-post.use-case';
 import { CreateCommentForPostCommand } from '../application/use-cases/create-comment-for-post.use-case';
-import { UpdatePostCommand } from '../application/use-cases/update-post.use-case';
-import { DeletePostCommand } from '../application/use-cases/delete-post.use-case';
+import { isUuidV4 } from '../../../../utils/uuidValidator';
 import { ChangePostLikeStatusCommand } from '../application/use-cases/change-post-like-status.use-case';
 
 @Controller(POSTS_API_PATH.ROOT_URL)
@@ -60,6 +52,17 @@ export class PostController {
     @Req() req: Request & { userId: string },
     @Param('id') id: string,
   ): Promise<PostViewDto> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     return this.postQueryRepository.getPostById(id, req.userId);
   }
 
@@ -70,6 +73,18 @@ export class PostController {
     @Query() query: CommentsQueryParams,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const queryParams = new CommentsQueryParams(query);
+
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const postId = await this.commandBus.execute(new GetPostByIdCommand(id));
 
     return this.commentsQueryRepository.getCommentsForPost(
@@ -79,21 +94,24 @@ export class PostController {
     );
   }
 
-  @UseGuards(BasicAuthGuard)
-  @Post()
-  async createPost(@Body() data: PostInputDto): Promise<PostViewDto> {
-    const postId = await this.commandBus.execute(new CreatePostCommand(data));
-
-    return this.postQueryRepository.getPostById(postId!);
-  }
-
   @UseGuards(BearerAuthGuard)
   @Post(`:id/${COMMENTS_API_PATH.ROOT_URL}`)
   async createCommentForPost(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
     @Body() date: CommentInputDto,
   ): Promise<CommentViewDto> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     const commentId = await this.commandBus.execute(
       new CreateCommentForPostCommand(id, req.userId, date),
     );
@@ -101,34 +119,27 @@ export class PostController {
     return this.commentsQueryRepository.getCommentById(commentId);
   }
 
-  @UseGuards(BasicAuthGuard)
-  @Put(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async updatePost(
-    @Param('id') id: Types.ObjectId,
-    @Body() data: PostInputDto,
-  ): Promise<void> {
-    return await this.commandBus.execute(new UpdatePostCommand(id, data));
-  }
-
   @UseGuards(BearerAuthGuard)
   @Put(`:id/${POSTS_API_PATH.LIKE_STATUS}`)
   @HttpCode(HttpStatus.NO_CONTENT)
   async changeLikeStatus(
     @Req() req: Request & { userId: string },
-    @Param('id') id: Types.ObjectId,
+    @Param('id') id: string,
     @Body() data: BaseLikeStatusInputDto,
   ): Promise<void> {
+    if (!isUuidV4(id)) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'id',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
     return await this.commandBus.execute(
       new ChangePostLikeStatusCommand(req.userId, id, data),
     );
   }
-
-  @UseGuards(BasicAuthGuard)
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePost(@Param('id') id: Types.ObjectId): Promise<void> {
-    return await this.commandBus.execute(new DeletePostCommand(id));
-  }
 }
-*/

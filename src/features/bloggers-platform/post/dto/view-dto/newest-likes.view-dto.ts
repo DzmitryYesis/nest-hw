@@ -6,7 +6,7 @@ export class NewestLikeViewDto {
   login: string;
 
   constructor(like: BaseLikesDislikesDBData) {
-    this.addedAt = like.addedAt.toISOString();
+    this.addedAt = like.addedAt;
     this.userId = like.userId;
     this.login = like.login;
   }

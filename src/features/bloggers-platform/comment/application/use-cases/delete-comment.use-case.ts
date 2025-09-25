@@ -1,11 +1,10 @@
-import { ObjectId } from 'mongodb';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CommentRepository } from '../../infrastructure';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 export class DeleteCommentCommand {
   constructor(
-    public id: ObjectId,
+    public id: string,
     public userId: string,
   ) {}
 }
@@ -25,12 +24,10 @@ export class DeleteCommentUseCase
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    if (comment.commentatorInfo.userId !== userId) {
+    if (comment.userId !== userId) {
       throw new ForbiddenException("You can't do it");
     }
 
-    comment.deleteComment();
-
-    await this.commentRepository.save(comment);
+    await this.commentRepository.deleteComment(id);
   }
 }

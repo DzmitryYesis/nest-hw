@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { PostRowDto } from '../dto/view-dto/post-row.dto';
+import { LikeDislikeForPostDto } from '../dto/application/like-deslike-for-post.dto';
 
 @Injectable()
 export class PostRepository {
@@ -72,6 +73,20 @@ export class PostRepository {
     return res[0].id;
   }
 
+  async createLikesDislikes(dto: LikeDislikeForPostDto): Promise<void> {
+    const { postId, userId, login, likeStatus } = dto;
+    await this.dataSource.query(
+      `INSERT INTO "PostsLikesDislikes" ("postId", "userId", "login", "addedAt", "likeStatus")
+       VALUES ($1, $2, $3, NOW(), $4)
+       ON CONFLICT ("postId", "userId")
+       DO UPDATE SET
+       "likeStatus" = EXCLUDED."likeStatus",
+       "addedAt"    = NOW(),
+       "login"      = EXCLUDED."login"`,
+      [postId, userId, login, likeStatus],
+    );
+  }
+
   async updatePost(
     title: string,
     content: string,
@@ -95,6 +110,13 @@ export class PostRepository {
     await this.dataSource.query(
       `UPDATE public."Posts" SET "postStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
       [id],
+    );
+  }
+
+  async deleteLikeDislike(postId: string, userId: string): Promise<void> {
+    await this.dataSource.query(
+      `DELETE FROM public."PostsLikesDislikes" WHERE "postId" = $1 AND "userId" = $2`,
+      [postId, userId],
     );
   }
 }

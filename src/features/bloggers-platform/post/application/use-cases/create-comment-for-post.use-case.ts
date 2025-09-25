@@ -1,15 +1,9 @@
-import { ObjectId } from 'mongodb';
-import {
-  Comment,
-  CommentInputDto,
-  CommentModelType,
-  CommentRepository,
-} from '../../../comment';
+import { CommentInputDto, CommentRepository } from '../../../comment';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InjectModel } from '@nestjs/mongoose';
 import { UsersRepository } from '../../../../user-accounts';
 import { PostRepository } from '../../infrastructure';
 import { NotFoundException } from '@nestjs/common';
+import { CreateCommentDto } from '../../../comment/dto/application/create-comment.dto';
 
 export class CreateCommentForPostCommand {
   constructor(
@@ -25,14 +19,12 @@ export class CreateCommentForPostUseCase
   implements ICommandHandler<CreateCommentForPostCommand>
 {
   constructor(
-    @InjectModel(Comment.name)
-    private CommentModel: CommentModelType,
     private userRepository: UsersRepository,
     private postRepository: PostRepository,
     private commentRepository: CommentRepository,
   ) {}
 
-  async execute(command: CreateCommentForPostCommand): Promise<ObjectId> {
+  async execute(command: CreateCommentForPostCommand): Promise<string> {
     const {
       userId,
       id,
@@ -65,15 +57,13 @@ export class CreateCommentForPostUseCase
       });
     }
 
-    const comment = this.CommentModel.createInstance({
+    const comment = {
       postId: post.id,
       content,
       userId: userId,
       userLogin: user.login,
-    });
+    } as CreateCommentDto;
 
-    await this.commentRepository.save(comment);
-
-    return comment._id;
+    return await this.commentRepository.createComment(comment);
   }
 }

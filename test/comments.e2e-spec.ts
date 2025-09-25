@@ -53,14 +53,29 @@ describe('Comments controller (e2e)', () => {
     await app.close();
   });
 
-  //GET /comments
-  describe('Get comments', () => {
-    it('should return response with error NOT_FOUND_404 for invalid id', async () => {
+  //GET /comments/:id
+  describe('Get comments by ID', () => {
+    it('should return response with error BAD_REQUEST for invalid id', async () => {
       await postTestManager.createSeveralCommentsForPost(1, 1);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get(`/${COMMENTS_API_PATH.ROOT_URL}/${invalidId}`)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response with error BAD_REQUEST for incorrect id', async () => {
@@ -118,19 +133,34 @@ describe('Comments controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it("shouldn't update comment by invalid commentId", async () => {
+    it('should return BAD_REQUEST for update comment by invalid commentId', async () => {
       const { accessToken } =
         await postTestManager.createSeveralCommentsForPost(1, 1);
       const commentInputDto = postTestManager.createCommentForPostInputDto(2);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .put(`/${COMMENTS_API_PATH.ROOT_URL}/${invalidId}`)
         .set('authorization', `Bearer ${accessToken}`)
         .send(commentInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
-    it("shouldn't update comment by incorrect commentId", async () => {
+    it('should return BAD_REQUEST for update comment by incorrect commentId', async () => {
       const { accessToken } =
         await postTestManager.createSeveralCommentsForPost(1, 1);
       const commentInputDto = postTestManager.createCommentForPostInputDto(2);
@@ -267,17 +297,32 @@ describe('Comments controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('should return response with error NOT_FOUND for like comment request', async () => {
+    it('should return response with error BAD_REQUEST for like comment request with invalid id', async () => {
       const { accessToken } =
         await postTestManager.createSeveralCommentsForPost(1, 1);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .put(
           `/${COMMENTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH.LIKE_STATUS}`,
         )
         .set('authorization', `Bearer ${accessToken}`)
         .send({ likeStatus: 'Like' } as BaseLikeStatusInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should return response with error BAD_REQUEST for like comment request with incorrect id', async () => {
@@ -603,14 +648,29 @@ describe('Comments controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it("shouldn't delete comment by invalid commentId", async () => {
+    it('should return BAD_REQUEST for delete comment by invalid commentId', async () => {
       const { accessToken } =
         await postTestManager.createSeveralCommentsForPost(1, 1);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete(`/${COMMENTS_API_PATH.ROOT_URL}/${invalidId}`)
         .set('authorization', `Bearer ${accessToken}`)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it("shouldn't delete comment by incorrect commentId", async () => {

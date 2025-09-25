@@ -1,17 +1,15 @@
-/*
-import { ObjectId } from 'mongodb';
 import { BaseLikeStatusInputDto } from '../../../../../core/dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersRepository } from '../../../../user-accounts';
 import { PostRepository } from '../../infrastructure';
 import { NotFoundException } from '@nestjs/common';
-import { BaseLikesDislikesDBData } from '../../../../../core';
 import { UserLikeStatus } from '../../../../../constants';
+import { LikeDislikeForPostDto } from '../../dto/application/like-deslike-for-post.dto';
 
 export class ChangePostLikeStatusCommand {
   constructor(
     public userId: string,
-    public id: ObjectId,
+    public id: string,
     public data: BaseLikeStatusInputDto,
   ) {}
 }
@@ -58,45 +56,17 @@ export class ChangePostLikeStatusUseCase
       });
     }
 
-    const likesArr = post.extendedLikesInfo.likes.map((l) => l.userId);
-    const dislikesArr = post.extendedLikesInfo.dislikes.map((d) => d.userId);
     const likeOrDislikeInfo = {
+      postId: post.id,
       userId: userId,
       login: user.login,
-      addedAt: new Date(),
-    } as BaseLikesDislikesDBData;
-
-    if (likeStatus === UserLikeStatus.LIKE) {
-      if (!likesArr.includes(userId) && !dislikesArr.includes(userId)) {
-        post.addLikeOrDislike('likes', likeOrDislikeInfo);
-      }
-      if (!likesArr.includes(userId) && dislikesArr.includes(userId)) {
-        post.deleteLikeOrDislike('dislikes', userId);
-        post.addLikeOrDislike('likes', likeOrDislikeInfo);
-      }
-    }
-
-    if (likeStatus === UserLikeStatus.DISLIKE) {
-      if (!likesArr.includes(userId) && !dislikesArr.includes(userId)) {
-        post.addLikeOrDislike('dislikes', likeOrDislikeInfo);
-      }
-      if (likesArr.includes(userId) && !dislikesArr.includes(userId)) {
-        post.deleteLikeOrDislike('likes', userId);
-        post.addLikeOrDislike('dislikes', likeOrDislikeInfo);
-      }
-    }
+      likeStatus: likeStatus.toUpperCase(),
+    } as LikeDislikeForPostDto;
 
     if (likeStatus === UserLikeStatus.NONE) {
-      if (likesArr.includes(userId)) {
-        post.deleteLikeOrDislike('likes', userId);
-      }
-
-      if (dislikesArr.includes(userId)) {
-        post.deleteLikeOrDislike('dislikes', userId);
-      }
+      await this.postRepository.deleteLikeDislike(post.id, userId);
+    } else {
+      await this.postRepository.createLikesDislikes(likeOrDislikeInfo);
     }
-
-    await this.postRepository.save(post);
   }
 }
-*/

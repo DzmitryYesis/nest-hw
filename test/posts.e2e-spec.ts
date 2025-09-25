@@ -356,14 +356,29 @@ describe('Posts controller (e2e)', () => {
 
   //GET /posts/:id/comments
   describe('Get comments for post', () => {
-    it('should response with error NOT_FOUND_404 for invalid postId', async () => {
+    it('should response with error BAD_REQUEST for invalid postId', async () => {
       await postTestManager.createPost(1);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get(
           `/${POSTS_API_PATH.ROOT_URL}/${invalidId}/${COMMENTS_API_PATH.ROOT_URL}`,
         )
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
+
+      console.log(response.body);
+
+      expect(response.body).toHaveProperty('errorsMessages');
+      expect(Array.isArray(response.body.errorsMessages)).toBe(true);
+      expect(response.body.errorsMessages).toHaveLength(1);
+
+      expect(response.body.errorsMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'id',
+            message: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('should response with error BAD_REQUEST for incorrect postId', async () => {
@@ -848,7 +863,7 @@ describe('Posts controller (e2e)', () => {
       );
     });
 
-    it('should return response with error NOT_FOUND_404 for invalid postId', async () => {
+    it('should return response with error BAD_REQUEST for invalid postId', async () => {
       await postTestManager.createPost(1);
       const { accessToken } = await userTestManager.loggedInUser(1);
       const comment = postTestManager.createCommentForPostInputDto(1);
@@ -859,7 +874,7 @@ describe('Posts controller (e2e)', () => {
         )
         .set('authorization', `Bearer ${accessToken}`)
         .send(comment)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
 
       console.log(response.body);
 
@@ -877,7 +892,7 @@ describe('Posts controller (e2e)', () => {
       );
     });
 
-    it('should return response with error NOT_FOUND_404 for incorrect postId', async () => {
+    it('should return response with error BAD_REQUEST for incorrect postId', async () => {
       await postTestManager.createPost(1);
       const { accessToken } = await userTestManager.loggedInUser(1);
       const comment = postTestManager.createCommentForPostInputDto(1);
@@ -1108,7 +1123,7 @@ describe('Posts controller (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('should return response with error NOT_FOUND for like post request with invalid id', async () => {
+    it('should return response with error BAD_REQUEST for like post request with invalid id', async () => {
       await postTestManager.createPost(1);
       const { accessToken } = await userTestManager.loggedInUser(1);
 
@@ -1118,7 +1133,7 @@ describe('Posts controller (e2e)', () => {
         )
         .set('authorization', `Bearer ${accessToken}`)
         .send({ likeStatus: 'Like' } as BaseLikeStatusInputDto)
-        .expect(HttpStatus.NOT_FOUND);
+        .expect(HttpStatus.BAD_REQUEST);
     });
 
     it('should return response with error BAD_REQUEST for like post request with incorrect id', async () => {

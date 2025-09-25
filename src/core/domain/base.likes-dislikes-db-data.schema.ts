@@ -10,8 +10,8 @@ export class BaseLikesDislikesDBData {
   @Prop({ type: String, required: true })
   login: string;
 
-  @Prop({ type: Date, default: Date.now })
-  addedAt: Date;
+  @Prop({ type: String })
+  addedAt: string;
 }
 
 export const BaseLikesDislikesDbDataSchema = SchemaFactory.createForClass(
