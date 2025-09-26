@@ -19,6 +19,9 @@ import { DeleteDevicesExcludeCurrentUseCase } from './application/use-cases/dele
 import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
 import { UpdateTokensUseCase } from './application/use-cases/update-tokens.use-case';
 import { SecurityController } from './api/security.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EmailConfirmation, PasswordRecovery, User } from './domain';
+import { Session } from './domain/session.entity';
 
 //import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -45,6 +48,12 @@ const useCases = [
         limit: 5,
       },
     ]),*/
+    TypeOrmModule.forFeature([
+      User,
+      EmailConfirmation,
+      PasswordRecovery,
+      Session,
+    ]),
     UtilitiesApplicationModule,
     CqrsModule,
   ],

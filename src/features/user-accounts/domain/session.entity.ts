@@ -1,42 +1,61 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SessionStatusEnum } from '../../../constants';
-import { HydratedDocument, Model } from 'mongoose';
-import { CreateSessionDomainDto } from '../dto';
-import { UpdateSessionDto } from '../dto/input-dto/update-session.dto';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './user.entity';
 
-@Schema({ timestamps: true })
+@Entity('sessions')
+@Index('idx_sessions_user', ['userId'])
+@Index('idx_sessions_user_device', ['userId', 'deviceId'], { unique: true })
 export class Session {
-  @Prop({ required: true, type: String })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('uuid')
   userId: string;
 
-  @Prop({ required: true, type: Number })
-  exp: number;
+  @ManyToOne(() => User, (u) => u.sessions, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
-  @Prop({ required: true, type: Number })
-  iat: number;
+  @Column('bigint')
+  exp: string;
 
-  @Prop({ required: true, type: String })
+  @Column('bigint')
+  iat: string;
+
+  @Column({ type: 'uuid' })
   deviceId: string;
 
-  @Prop({ required: true, type: String })
+  @Column()
   deviceName: string;
 
-  @Prop({ required: true, type: String })
+  @Column({ type: 'inet' })
   ip: string;
 
-  @Prop({ type: Date })
+  @Column({ type: 'timestamptz' })
   createdAt: Date;
 
-  @Prop({ type: Date })
+  @Column({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @Prop({ enum: SessionStatusEnum, default: SessionStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: SessionStatusEnum,
+    enumName: 'session_status',
+    default: SessionStatusEnum.ACTIVE,
+  })
   sessionStatus: SessionStatusEnum;
 
-  @Prop({ type: Date, nullable: true, default: null })
+  @Column({ type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 
-  static createInstance(dto: CreateSessionDomainDto): SessionDocument {
+  /*static createInstance(dto: CreateSessionDomainDto): SessionDocument {
     const session = new this();
 
     session.userId = dto.userId;
@@ -47,23 +66,15 @@ export class Session {
     session.exp = dto.exp;
 
     return session as SessionDocument;
-  }
+  }*/
 
-  updateSession(dto: UpdateSessionDto) {
+  /*updateSession(dto: UpdateSessionDto) {
     this.iat = dto.iat;
     this.exp = dto.exp;
-  }
+  }*/
 
-  deleteSession() {
+  /*deleteSession() {
     this.sessionStatus = SessionStatusEnum.DELETED;
     this.deletedAt = new Date();
-  }
+  }*/
 }
-
-export const SessionSchema = SchemaFactory.createForClass(Session);
-
-SessionSchema.loadClass(Session);
-
-export type SessionDocument = HydratedDocument<Session>;
-
-export type SessionModelType = Model<SessionDocument> & typeof Session;
