@@ -33,7 +33,7 @@ export class DeleteDeviceUseCase
       throw new NotFoundException();
     }
 
-    const [session] =
+    const session =
       await this.sessionsRepository.findSessionByDeviceId(deviceId);
 
     if (!session) {

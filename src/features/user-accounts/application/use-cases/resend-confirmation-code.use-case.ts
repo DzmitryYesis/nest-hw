@@ -18,7 +18,7 @@ export class ResendConfirmationCodeUseCase
   ) {}
 
   async execute(command: ResendConfirmationCodeCommand): Promise<void> {
-    const [user] = await this.usersRepository.findUserByEmail(command.email);
+    const user = await this.usersRepository.findUserByEmail(command.email);
 
     if (!user || user.isConfirmed) {
       throw new BadRequestException({
@@ -31,12 +31,12 @@ export class ResendConfirmationCodeUseCase
       });
     }
 
-    const [confirmationInfo] =
-      await this.usersRepository.findUserConfirmationCodeById(user.id);
+    const confirmationInfo = user.emailConfirmation;
 
     if (
       !confirmationInfo ||
-      new Date(confirmationInfo.expirationDate) < new Date()
+      (confirmationInfo.expirationDate &&
+        new Date(confirmationInfo.expirationDate) < new Date())
     ) {
       throw new BadRequestException({
         errorsMessages: [

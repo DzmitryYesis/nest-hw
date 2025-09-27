@@ -38,7 +38,7 @@ export class UsersController {
   @Post()
   async createUser(@Body() data: UserInputDto): Promise<UserViewDto | void> {
     const userId = await this.commandBus.execute(
-      new CreateUserCommand({ ...data, isAdmin: false }),
+      new CreateUserCommand({ ...data, isAdmin: true }),
     );
 
     return this.usersSqlQueryRepository.getUserById(userId);

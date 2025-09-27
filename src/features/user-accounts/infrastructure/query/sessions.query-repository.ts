@@ -1,20 +1,25 @@
 import { SessionDeviceViewDto } from '../../dto/view-dto/session-device.view-dto';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
+import { Session } from '../../domain/session.entity';
+import { SessionStatusEnum } from '../../../../constants';
 
 export class SessionsQueryRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Session)
+    private readonly sessionsRepo: Repository<Session>,
+  ) {}
 
   async getAllDevices(userId: string): Promise<SessionDeviceViewDto[]> {
-    const devices = await this.dataSource.query(
-      `
-    SELECT * FROM public."Sessions" 
-    WHERE "userId" = $1::uuid
-    AND "sessionStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [userId],
-    );
+    const sessions = await this.sessionsRepo.find({
+      where: {
+        userId,
+        sessionStatus: Not(SessionStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+      order: { updatedAt: 'DESC' },
+    });
 
-    return devices.map(SessionDeviceViewDto.mapToView);
+    return sessions.map(SessionDeviceViewDto.mapToView);
   }
 }

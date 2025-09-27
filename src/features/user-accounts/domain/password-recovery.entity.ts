@@ -1,4 +1,11 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('password_recovery')
@@ -18,6 +25,6 @@ export class PasswordRecovery {
   @Column({ type: 'timestamptz', nullable: true, default: null })
   expirationDate: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true, default: null })
-  lastUpdateDate: Date | null;
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 }

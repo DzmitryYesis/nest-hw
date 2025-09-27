@@ -10,7 +10,7 @@ export class UsersService {
   async checkIsUserHaveUniqueEmail(email: string): Promise<boolean> {
     const userByEmail = await this.usersRepository.findUserByEmail(email);
 
-    if (userByEmail.length !== 0) {
+    if (userByEmail) {
       throw new BadRequestException({
         errorsMessages: [
           {
@@ -27,7 +27,7 @@ export class UsersService {
   async checkIsUserHaveUniqueLogin(login: string): Promise<boolean> {
     const userByLogin = await this.usersRepository.findUserByLogin(login);
 
-    if (userByLogin.length !== 0) {
+    if (userByLogin) {
       throw new BadRequestException({
         errorsMessages: [
           {

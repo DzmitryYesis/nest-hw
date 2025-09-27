@@ -44,7 +44,7 @@ export class CreateCommentForPostUseCase
       });
     }
 
-    const [user] = await this.userRepository.findUserById(userId);
+    const user = await this.userRepository.findUserById(userId);
 
     if (!user) {
       throw new NotFoundException({

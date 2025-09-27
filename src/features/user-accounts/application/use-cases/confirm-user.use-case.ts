@@ -11,18 +11,29 @@ export class ConfirmUserUseCase implements ICommandHandler<ConfirmUserCommand> {
   constructor(private usersRepository: UsersRepository) {}
 
   async execute(command: ConfirmUserCommand): Promise<void> {
-    const [userInfo] =
-      await this.usersRepository.findUserInfoByConfirmationCode(command.code);
-
-    const [user] = await this.usersRepository.findUserById(userInfo.userId);
+    const userInfo = await this.usersRepository.findUserInfoByConfirmationCode(
+      command.code,
+    );
 
     if (
-      !user ||
       !userInfo ||
       userInfo.confirmationCode !== command.code ||
-      new Date(userInfo.expirationDate) < new Date() ||
-      user.isConfirmed
+      (userInfo.expirationDate &&
+        new Date(userInfo.expirationDate) < new Date())
     ) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            field: 'code',
+            message: 'Some problem',
+          },
+        ],
+      });
+    }
+
+    const user = await this.usersRepository.findUserById(userInfo.userId);
+
+    if (!user || user.isConfirmed) {
       throw new BadRequestException({
         errorsMessages: [
           {

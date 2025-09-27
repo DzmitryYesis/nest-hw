@@ -30,7 +30,7 @@ export class LoginUseCase implements ICommandHandler<LoginCommand> {
       data: { loginOrEmail, password },
     } = command;
 
-    const [user] =
+    const user =
       await this.usersRepository.findUserByLoginOrEmail(loginOrEmail);
 
     if (!user) {

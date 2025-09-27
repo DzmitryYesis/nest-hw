@@ -15,9 +15,6 @@ export class EmailConfirmation {
   @Column()
   confirmationCode: string;
 
-  @Column({ type: 'timestamptz' })
-  expirationDate: Date;
-
-  @Column({ type: 'boolean', default: false })
-  isConfirmed: boolean;
+  @Column({ type: 'timestamptz', nullable: true })
+  expirationDate: Date | null;
 }

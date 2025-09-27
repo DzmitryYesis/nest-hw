@@ -1,11 +1,13 @@
 import { SessionStatusEnum } from '../../../constants';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -38,10 +40,10 @@ export class Session {
   @Column({ type: 'inet' })
   ip: string;
 
-  @Column({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
   @Column({
@@ -54,27 +56,4 @@ export class Session {
 
   @Column({ type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
-
-  /*static createInstance(dto: CreateSessionDomainDto): SessionDocument {
-    const session = new this();
-
-    session.userId = dto.userId;
-    session.deviceId = dto.deviceId;
-    session.ip = dto.ip;
-    session.deviceName = dto.deviceName;
-    session.iat = dto.iat;
-    session.exp = dto.exp;
-
-    return session as SessionDocument;
-  }*/
-
-  /*updateSession(dto: UpdateSessionDto) {
-    this.iat = dto.iat;
-    this.exp = dto.exp;
-  }*/
-
-  /*deleteSession() {
-    this.sessionStatus = SessionStatusEnum.DELETED;
-    this.deletedAt = new Date();
-  }*/
 }

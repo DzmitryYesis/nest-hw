@@ -1,12 +1,14 @@
-import { EmailConfirmation } from './email-confirmation.schema';
+import { EmailConfirmation } from './email-confirmation.entity';
 import { UserStatusEnum } from '../../../constants';
-import { PasswordRecovery } from './password-recovery.schema';
+import { PasswordRecovery } from './password-recovery.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Session } from './session.entity';
 
@@ -39,10 +41,10 @@ export class User {
   @OneToMany(() => Session, (s) => s.user, { cascade: false, eager: false })
   sessions: Session[];
 
-  @Column({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
   @Column({
@@ -53,65 +55,9 @@ export class User {
   })
   userStatus: UserStatusEnum;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'boolean', default: false })
+  isConfirmed: boolean;
+
+  @Column({ type: 'timestamptz', nullable: true, default: null })
   deletedAt: Date | null;
-
-  /*static createInstance(dto: CreateUserDomainDto): UserDocument {
-    const user = new this();
-
-    user.login = dto.login;
-    user.email = dto.email;
-    user.passwordHash = dto.passwordHash;
-
-    user.emailConfirmation = {
-      confirmationCode: uuidV4(),
-      expirationDate: add(new Date(), {
-        hours: 1,
-        minutes: 3,
-      }),
-      isConfirmed: dto.isConfirmed,
-    } as EmailConfirmation;
-
-    user.passwordRecovery = {
-      recoveryCode: null,
-      expirationDate: null,
-      lastUpdateDate: null,
-    } as PasswordRecovery;
-
-    return user as UserDocument;
-  }*/
-
-  /*confirmUser() {
-    this.emailConfirmation.isConfirmed = true;
-  }*/
-
-  /*changeConfirmationCode() {
-    this.emailConfirmation.confirmationCode = uuidV4();
-    this.emailConfirmation.expirationDate = add(new Date(), {
-      hours: 1,
-      minutes: 30,
-    });
-  }*/
-
-  /*createPasswordRecoveryCode() {
-    this.passwordRecovery.recoveryCode = uuidV4();
-    this.passwordRecovery.expirationDate = add(new Date(), {
-      hours: 1,
-      minutes: 30,
-    });
-  }*/
-
-  /*changePassword(password: string) {
-    this.passwordHash = password;
-    this.passwordRecovery = {
-      recoveryCode: null,
-      expirationDate: null,
-      lastUpdateDate: new Date(),
-    };
-  }*/
-
-  /*deleteUser() {
-    this.userStatus = UserStatusEnum.DELETED;
-    this.deletedAt = new Date();
-  }*/
 }

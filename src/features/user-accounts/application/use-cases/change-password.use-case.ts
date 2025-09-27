@@ -20,7 +20,7 @@ export class ChangePasswordUseCase
   async execute(command: ChangePasswordCommand): Promise<void> {
     const { newPassword, recoveryCode } = command.dto;
 
-    const [recoveryPasswordInfo] =
+    const recoveryPasswordInfo =
       await this.usersRepository.findUserInfoByRecoveryCode(recoveryCode);
 
     if (
