@@ -3,3 +3,9 @@ export enum UserLikeStatus {
   DISLIKE = 'Dislike',
   NONE = 'None',
 }
+
+export enum LikeDislikeStatus {
+  LIKE = 'LIKE',
+  DISLIKE = 'DISLIKE',
+  NONE = 'NONE',
+}

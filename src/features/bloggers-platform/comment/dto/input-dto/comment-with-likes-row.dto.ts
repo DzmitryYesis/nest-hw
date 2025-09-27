@@ -1,7 +1,7 @@
 import { CommentRowDto } from './comment-row.dto';
-import { BaseLikesDislikesDBData } from '../../../../../core';
+import { CommentLikeDislike } from '../../domain/comment-like-dislike.entity';
 
 export class CommentWithLikesRowDto extends CommentRowDto {
-  likes: BaseLikesDislikesDBData[];
-  dislikes: BaseLikesDislikesDBData[];
+  likes: CommentLikeDislike[];
+  dislikes: CommentLikeDislike[];
 }

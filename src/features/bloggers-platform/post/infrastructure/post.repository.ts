@@ -1,58 +1,50 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { PostRowDto } from '../dto/view-dto/post-row.dto';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { LikeDislikeForPostDto } from '../dto/application/like-deslike-for-post.dto';
+import { Post } from '../domain';
+import { LikeDislikeStatus, PostStatusEnum } from '../../../../constants';
+import { PostLikeDislike } from '../domain/post-like-dislike.entity';
 
 @Injectable()
 export class PostRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Post)
+    private readonly postsRepo: Repository<Post>,
+    @InjectRepository(PostLikeDislike)
+    private readonly postLikeDislikeRepo: Repository<PostLikeDislike>,
+  ) {}
 
-  async findPostById(id: string): Promise<PostRowDto | null> {
-    const res = await this.dataSource.query(
-      `SELECT
-    p.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+  async findPostById(id: string): Promise<Post | null> {
+    const post = await this.postsRepo.findOne({
+      where: {
+        id,
+        postStatus: Not(PostStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+      relations: {
+        postLikesDislikes: true,
+      },
+    });
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes,
-
-    COUNT(*) OVER()::int AS total_count
-
-  FROM public."Posts" p
-  WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [id],
-    );
-
-    if (res.length === 0) {
+    if (!post) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
 
-    return res[0];
+    return post;
+  }
+
+  async findLikeDislike(
+    postId: string,
+    userId: string,
+  ): Promise<PostLikeDislike | null> {
+    return await this.postLikeDislikeRepo.findOne({
+      where: {
+        postId,
+        userId,
+      },
+    });
   }
 
   async createPostForBlog(
@@ -62,29 +54,29 @@ export class PostRepository {
     blogId: string,
     blogName: string,
   ): Promise<string> {
-    const sql = `INSERT INTO public."Posts" ("title", "content", "shortDescription", "blogId", "blogName")
-                 VALUES ($1, $2, $3, $4, $5)
-                 RETURNING "id"`;
+    const post = this.postsRepo.create({
+      title,
+      content,
+      shortDescription,
+      blogId,
+      blogName,
+    });
 
-    const params = [title, content, shortDescription, blogId, blogName];
+    await this.postsRepo.save(post);
 
-    const res = await this.dataSource.query(sql, params);
-
-    return res[0].id;
+    return post.id;
   }
 
-  async createLikesDislikes(dto: LikeDislikeForPostDto): Promise<void> {
+  async createLikeDislike(dto: LikeDislikeForPostDto): Promise<void> {
     const { postId, userId, login, likeStatus } = dto;
-    await this.dataSource.query(
-      `INSERT INTO "PostsLikesDislikes" ("postId", "userId", "login", "addedAt", "likeStatus")
-       VALUES ($1, $2, $3, NOW(), $4)
-       ON CONFLICT ("postId", "userId")
-       DO UPDATE SET
-       "likeStatus" = EXCLUDED."likeStatus",
-       "addedAt"    = NOW(),
-       "login"      = EXCLUDED."login"`,
-      [postId, userId, login, likeStatus],
-    );
+    const likeDislike = this.postLikeDislikeRepo.create({
+      postId,
+      userId,
+      login,
+      likeStatus: likeStatus as LikeDislikeStatus,
+    });
+
+    await this.postLikeDislikeRepo.save(likeDislike);
   }
 
   async updatePost(
@@ -92,31 +84,26 @@ export class PostRepository {
     content: string,
     shortDescription: string,
     postId: string,
-  ): Promise<boolean> {
-    const sql = `UPDATE public."Posts"
-               SET "title" = $1,
-                   "content" = $2,
-                   "shortDescription" = $3
-               WHERE "id" = $4`;
-
-    const params = [title, content, shortDescription, postId];
-
-    const res = await this.dataSource.query(sql, params);
-
-    return res.rowCount > 0;
-  }
-
-  async deletePost(id: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Posts" SET "postStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
-      [id],
+  ): Promise<void> {
+    await this.postsRepo.update(
+      { id: postId },
+      { title, content, shortDescription },
     );
   }
 
-  async deleteLikeDislike(postId: string, userId: string): Promise<void> {
-    await this.dataSource.query(
-      `DELETE FROM public."PostsLikesDislikes" WHERE "postId" = $1 AND "userId" = $2`,
-      [postId, userId],
-    );
+  async updateLikeDislikeStatus(
+    postLikeDislike: PostLikeDislike,
+    likeStatus: LikeDislikeStatus,
+  ): Promise<void> {
+    postLikeDislike.likeStatus = likeStatus;
+
+    await this.postLikeDislikeRepo.save(postLikeDislike);
+  }
+
+  async deletePost(post: Post): Promise<void> {
+    post.postStatus = PostStatusEnum.DELETED;
+    post.deletedAt = new Date();
+
+    await this.postsRepo.save(post);
   }
 }

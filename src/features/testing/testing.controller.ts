@@ -15,7 +15,12 @@ export class TestingController {
     "sessions",
     "email_confirmations",
     "password_recovery",
-    "users"
+    "users",
+    "comment_likes",
+    "comments",
+    "post_likes",
+    "posts",
+    "blogs"
   RESTART IDENTITY CASCADE
 `);
     return;

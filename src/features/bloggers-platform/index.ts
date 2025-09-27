@@ -9,9 +9,6 @@ export {
   CreateBlogDomainDto,
   BlogsQueryParams,
   Blog,
-  BlogSchema,
-  BlogDocument,
-  BlogModelType,
 } from './blog';
 export {
   PostRepository,
@@ -22,9 +19,6 @@ export {
   UpdatePostDomainDto,
   NewestLikeViewDto,
   Post,
-  PostSchema,
-  PostDocument,
-  PostModelType,
 } from './post';
 export {
   CommentController,
@@ -32,9 +26,4 @@ export {
   CommentQueryRepository,
   CreateCommentDomainDto,
   Comment,
-  CommentDocument,
-  CommentSchema,
-  CommentModelType,
-  CommentatorInfo,
-  CommentatorInfoSchema,
 } from './comment';

@@ -1,88 +1,58 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CommentStatusEnum } from '../../../../constants';
 import {
-  BaseExtendedLikesInfoSchema,
-  BaseLikesDislikesDBData,
-  BaseLikesDislikesInfo,
-} from '../../../../core/domain';
-import {
-  CommentatorInfo,
-  CommentatorInfoSchema,
-} from './commentator-info.schema';
-import { CommentInputDto, CreateCommentDomainDto } from '../dto';
-import { HydratedDocument, Model } from 'mongoose';
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Post } from '../../post';
+import { CommentLikeDislike } from './comment-like-dislike.entity';
 
-@Schema({ timestamps: true })
+@Entity('comments')
 export class Comment {
-  @Prop({ required: true, type: String })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
   content: string;
 
-  @Prop({ required: true, type: String })
+  @Column('uuid')
   postId: string;
 
-  @Prop({ type: CommentatorInfoSchema })
-  commentatorInfo: CommentatorInfo;
+  @Column('uuid')
+  userId: string;
 
-  @Prop({ type: Date })
+  @Column()
+  userLogin: string;
+
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Prop({ type: Date })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Prop({ enum: CommentStatusEnum, default: CommentStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: CommentStatusEnum,
+    enumName: 'comment_status',
+    default: CommentStatusEnum.ACTIVE,
+  })
   commentStatus: CommentStatusEnum;
 
-  @Prop({ type: Date, nullable: true, default: null })
+  @Column({ type: 'timestamptz', nullable: true, default: null })
   deletedAt: Date | null;
 
-  @Prop({ type: BaseExtendedLikesInfoSchema })
-  likesInfo: BaseLikesDislikesInfo;
+  @ManyToOne(() => Post, (post) => post.comments, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'postId' })
+  post: Post;
 
-  static createInstance(dto: CreateCommentDomainDto): CommentDocument {
-    const comment = new this();
-
-    comment.content = dto.content;
-    comment.postId = dto.postId;
-
-    comment.commentatorInfo = {
-      userId: dto.userId,
-      userLogin: dto.userLogin,
-    };
-    comment.likesInfo = {
-      likes: [],
-      dislikes: [],
-    };
-
-    return comment as CommentDocument;
-  }
-
-  updateComment(dto: CommentInputDto): void {
-    this.content = dto.content;
-  }
-
-  addLikeOrDislike(
-    field: 'likes' | 'dislikes',
-    dto: BaseLikesDislikesDBData,
-  ): void {
-    this.likesInfo[field].push(dto);
-  }
-
-  deleteLikeOrDislike(field: 'likes' | 'dislikes', userId: string): void {
-    this.likesInfo[field] = this.likesInfo[field].filter(
-      (item) => item.userId !== userId,
-    );
-  }
-
-  deleteComment(): void {
-    this.commentStatus = CommentStatusEnum.DELETED;
-    this.deletedAt = new Date();
-  }
+  @OneToMany(() => CommentLikeDislike, (cl) => cl.comment)
+  commentLikesDislikes: CommentLikeDislike[];
 }
-
-export const CommentSchema = SchemaFactory.createForClass(Comment);
-
-CommentSchema.loadClass(Comment);
-
-export type CommentDocument = HydratedDocument<Comment>;
-
-export type CommentModelType = Model<CommentDocument> & typeof Comment;

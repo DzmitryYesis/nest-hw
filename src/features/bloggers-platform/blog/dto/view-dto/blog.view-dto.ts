@@ -1,4 +1,4 @@
-import { BlogRowDto } from './blog-row.dto';
+import { Blog } from '../../domain';
 
 export class BlogViewDto {
   id: string;
@@ -8,7 +8,7 @@ export class BlogViewDto {
   createdAt: Date;
   isMembership: boolean;
 
-  static mapToView(blog: BlogRowDto): BlogViewDto {
+  static mapToView(blog: Blog): BlogViewDto {
     const dto = new BlogViewDto();
 
     dto.id = blog.id;

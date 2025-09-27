@@ -1,24 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { BlogInputDto, BlogViewDto } from '../dto';
+import { Injectable } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { BlogInputDto } from '../dto';
+import { Blog } from '../domain';
+import { BlogStatusEnum } from '../../../../constants';
 
 @Injectable()
 export class BlogRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Blog)
+    private readonly blogRepo: Repository<Blog>,
+  ) {}
 
-  async findBlogById(id: string): Promise<BlogViewDto | null> {
-    const res = await this.dataSource.query(
-      `SELECT * FROM public."Blogs" WHERE "id" = $1::uuid AND "blogStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [id],
-    );
-
-    if (res.length === 0) {
-      throw new NotFoundException(`Blog with id ${id} not found`);
-    }
-
-    return BlogViewDto.mapToView(res[0]);
+  async findBlogById(id: string): Promise<Blog | null> {
+    return await this.blogRepo.findOne({
+      where: {
+        id,
+        blogStatus: Not(BlogStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
   }
 
   async createBlog(
@@ -26,36 +28,26 @@ export class BlogRepository {
     description: string,
     websiteUrl: string,
   ): Promise<string> {
-    const sql = `INSERT INTO public."Blogs" ("name", "description", "websiteUrl")
-                 VALUES ($1, $2, $3)
-                 RETURNING "id"`;
+    const blog = this.blogRepo.create({
+      name,
+      description,
+      websiteUrl,
+    });
 
-    const params = [name, description, websiteUrl];
+    await this.blogRepo.save(blog);
 
-    const res = await this.dataSource.query(sql, params);
-
-    return res[0].id;
+    return blog.id;
   }
 
-  async updateBlog(id: string, dto: BlogInputDto): Promise<boolean> {
+  async updateBlog(id: string, dto: BlogInputDto): Promise<void> {
     const { name, description, websiteUrl } = dto;
-    const sql = `UPDATE public."Blogs"
-               SET "name" = $1,
-                   "description" = $2,
-                   "websiteUrl" = $3
-               WHERE "id" = $4`;
-
-    const params = [name, description, websiteUrl, id];
-
-    const res = await this.dataSource.query(sql, params);
-
-    return res.rowCount > 0;
+    await this.blogRepo.update({ id }, { name, description, websiteUrl });
   }
 
-  async deleteBlog(id: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Blogs" SET "blogStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
-      [id],
-    );
+  async deleteBlog(blog: Blog): Promise<void> {
+    blog.blogStatus = BlogStatusEnum.DELETED;
+    blog.deletedAt = new Date();
+
+    await this.blogRepo.save(blog);
   }
 }

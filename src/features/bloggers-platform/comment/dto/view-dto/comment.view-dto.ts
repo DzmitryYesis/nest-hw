@@ -1,6 +1,6 @@
 import { CommentCommentatorInfoViewDto } from './comment-commentator-info.view-dto';
 import { CommentsLikesDislikesInfoViewDto } from './comments-likes-dislikes-info.view-dto';
-import { CommentWithLikesRowDto } from '../input-dto/comment-with-likes-row.dto';
+import { CommentRowDto } from '../input-dto/comment-row.dto';
 
 export class CommentViewDto {
   id: string;
@@ -9,10 +9,7 @@ export class CommentViewDto {
   createdAt: Date;
   likesInfo: CommentsLikesDislikesInfoViewDto;
 
-  static mapToView(
-    comment: CommentWithLikesRowDto,
-    userId?: string,
-  ): CommentViewDto {
+  static mapToView(comment: CommentRowDto, userId?: string): CommentViewDto {
     const dto = new CommentViewDto();
 
     dto.id = comment.id;

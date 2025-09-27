@@ -1,74 +1,95 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCommentDto } from '../dto/application/create-comment.dto';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { CommentRowDto } from '../dto/input-dto/comment-row.dto';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { LikeDislikeForCommentDto } from '../dto/application/like-dislike-for-comment.dto';
+import { Comment } from '../domain';
+import { CommentStatusEnum, LikeDislikeStatus } from '../../../../constants';
+import { CommentLikeDislike } from '../domain/comment-like-dislike.entity';
 
 @Injectable()
 export class CommentRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Comment)
+    private readonly commentsRepo: Repository<Comment>,
+    @InjectRepository(CommentLikeDislike)
+    private readonly commentLikeDislikeRepo: Repository<CommentLikeDislike>,
+  ) {}
 
-  async findCommentById(id: string): Promise<CommentRowDto | null> {
-    const res = await this.dataSource.query(
-      `SELECT * FROM public."Comments" WHERE "id" = $1::uuid AND "commentStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [id],
-    );
+  async findCommentById(id: string): Promise<Comment | null> {
+    const comment = await this.commentsRepo.findOne({
+      where: {
+        id,
+        commentStatus: Not(CommentStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
 
-    if (res.length === 0) {
+    if (!comment) {
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    return res[0];
+    return comment;
+  }
+
+  async findLikeDislike(
+    commentId: string,
+    userId: string,
+  ): Promise<CommentLikeDislike | null> {
+    return await this.commentLikeDislikeRepo.findOne({
+      where: {
+        commentId,
+        userId,
+      },
+    });
   }
 
   async createComment(dto: CreateCommentDto): Promise<string> {
     const { postId, content, userId, userLogin } = dto;
 
-    const res = await this.dataSource.query(
-      `INSERT INTO public."Comments" ("postId", "content", "userId", "userLogin")
-       VALUES ($1, $2, $3, $4)
-       RETURNING "id"`,
-      [postId, content, userId, userLogin],
-    );
+    const comment = this.commentsRepo.create({
+      postId,
+      content,
+      userId,
+      userLogin,
+    });
 
-    return res[0].id;
+    await this.commentsRepo.save(comment);
+
+    return comment.id;
   }
 
-  async createLikesDislikes(dto: LikeDislikeForCommentDto): Promise<void> {
+  async createLikeDislike(dto: LikeDislikeForCommentDto): Promise<void> {
     const { commentId, userId, likeStatus } = dto;
-    await this.dataSource.query(
-      `INSERT INTO "CommentsLikesDislikes" ("commentId", "userId", "addedAt", "likeStatus")
-       VALUES ($1, $2, NOW(), $3)
-       ON CONFLICT ("commentId", "userId")
-       DO UPDATE SET
-       "likeStatus" = EXCLUDED."likeStatus",
-       "addedAt"    = NOW()`,
-      [commentId, userId, likeStatus],
-    );
+    const likeDislike = this.commentLikeDislikeRepo.create({
+      commentId,
+      userId,
+      likeStatus: likeStatus as LikeDislikeStatus,
+    });
+
+    await this.commentLikeDislikeRepo.save(likeDislike);
   }
 
-  async updateComment(commentId: string, content: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Comments" 
-       SET "content" = $2, "updatedAt" = now() 
-       WHERE "id" = $1`,
-      [commentId, content],
-    );
+  async updateComment(comment: Comment, content: string): Promise<void> {
+    comment.content = content;
+
+    await this.commentsRepo.save(comment);
   }
 
-  async deleteComment(id: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Comments" SET "commentStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
-      [id],
-    );
+  async updateLikeDislikeStatus(
+    commentLikeDislike: CommentLikeDislike,
+    likeStatus: LikeDislikeStatus,
+  ): Promise<void> {
+    commentLikeDislike.likeStatus = likeStatus;
+
+    await this.commentLikeDislikeRepo.save(commentLikeDislike);
   }
 
-  async deleteLikeDislike(commentId: string, userId: string): Promise<void> {
-    await this.dataSource.query(
-      `DELETE FROM public."CommentsLikesDislikes" WHERE "commentId" = $1 AND "userId" = $2`,
-      [commentId, userId],
-    );
+  async deleteComment(comment: Comment): Promise<void> {
+    comment.commentStatus = CommentStatusEnum.DELETED;
+    comment.deletedAt = new Date();
+
+    await this.commentsRepo.save(comment);
   }
 }

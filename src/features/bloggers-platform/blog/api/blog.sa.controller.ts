@@ -111,7 +111,7 @@ export class BlogSAController {
       new CreatePostForBlogCommand(blogId, data),
     );
 
-    return this.postQueryRepository.getPostById(postId!);
+    return this.postQueryRepository.getPostById(postId);
   }
 
   @Put(':id')

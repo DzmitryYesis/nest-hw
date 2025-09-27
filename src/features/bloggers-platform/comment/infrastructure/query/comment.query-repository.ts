@@ -1,125 +1,129 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CommentsQueryParams, CommentViewDto } from '../../dto';
 import { PaginatedViewDto } from '../../../../../core';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { Comment } from '../../domain';
+import { CommentStatusEnum, LikeDislikeStatus } from '../../../../../constants';
+import { CommentRowDto } from '../../dto/input-dto/comment-row.dto';
 
 @Injectable()
 export class CommentQueryRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Comment)
+    private readonly commentsRepo: Repository<Comment>,
+  ) {}
 
   async getCommentById(id: string, userId?: string): Promise<CommentViewDto> {
-    const res = await this.dataSource.query(
-      `
-  SELECT 
-    c.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  cld."userId",
-                 'addedAt', cld."addedAt"
-               )
-               ORDER BY cld."addedAt" DESC
-             )
-      FROM public."CommentsLikesDislikes" cld
-      WHERE cld."commentId" = c."id"
-        AND cld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+    const comment = await this.commentsRepo.findOne({
+      where: {
+        id,
+        commentStatus: Not(CommentStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+      relations: {
+        commentLikesDislikes: true,
+      },
+    });
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  cld."userId",
-                 'addedAt', cld."addedAt"
-               )
-               ORDER BY cld."addedAt" DESC
-             )
-      FROM public."CommentsLikesDislikes" cld
-      WHERE cld."commentId" = c."id"
-        AND cld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes
-
-  FROM public."Comments" c 
-  WHERE c."id" = $1::uuid
-    AND c."commentStatus" <> 'DELETED'
-    AND c."deletedAt" IS NULL
-  `,
-      [id],
-    );
-
-    if (res.length === 0) {
+    if (!comment) {
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    return CommentViewDto.mapToView(res[0], userId);
+    const commentEntity = {
+      ...comment,
+      likes: comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.LIKE,
+      ),
+      dislikes: comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.DISLIKE,
+      ),
+    };
+
+    return CommentViewDto.mapToView(
+      commentEntity as unknown as CommentRowDto,
+      userId,
+    );
   }
 
   async getCommentsForPost(
-    id: string,
+    postId: string,
     query: CommentsQueryParams,
     userId?: string,
   ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const { pageNumber, pageSize, sortBy, sortDirection } = query;
+    const dir: 'ASC' | 'DESC' =
+      String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
+    // 1) totalCount — без join/агрегатов
+    const totalCount = await this.commentsRepo
+      .createQueryBuilder('c')
+      .where('c.postId = :postId', { postId })
+      .andWhere('c.commentStatus <> :del', { del: CommentStatusEnum.DELETED })
+      .andWhere('c.deletedAt IS NULL')
+      .getCount();
+
+    // 2) сами записи + JSON-агрегаты реакций
+    const qb = this.commentsRepo
+      .createQueryBuilder('c')
+      .where('c.postId = :postId', { postId })
+      .andWhere('c.commentStatus <> :del', { del: CommentStatusEnum.DELETED })
+      .andWhere('c.deletedAt IS NULL')
+      // Замените 'c.commentLikes' на имя вашей связи, если иное (например, 'c.commentLikesDislikes')
+      .leftJoin('c.commentLikesDislikes', 'cl')
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  cl."userId",
+            'addedAt', cl."addedAt"
+          )
+          ORDER BY cl."addedAt" DESC
+        ) FILTER (WHERE cl."likeStatus" = 'LIKE'),
+        '[]'::json
+      )`,
+        'likes',
+      )
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  cl."userId",
+            'addedAt', cl."addedAt"
+          )
+          ORDER BY cl."addedAt" DESC
+        ) FILTER (WHERE cl."likeStatus" = 'DISLIKE'),
+        '[]'::json
+      )`,
+        'dislikes',
+      )
+      .groupBy('c.id');
+
+    // сортировка
     const sortMap: Record<string, string> = {
-      content: '"content" COLLATE "C"',
-      createdAt: '"createdAt"',
+      content: `"c"."content" COLLATE "C"`,
+      createdAt: `c.createdAt`,
     };
-    const orderBy = sortMap[sortBy];
-    const direction = sortDirection.toUpperCase();
+    qb.orderBy(sortMap[sortBy] ?? 'c.createdAt', dir)
+      .skip((pageNumber - 1) * pageSize)
+      .take(pageSize);
 
-    const where: string[] = [
-      '"postId" = $1',
-      '"commentStatus" <> $2',
-      '"deletedAt" IS NULL',
-    ];
-    const params: any[] = [id, 'DELETED'];
-    const i = 3;
+    const { raw, entities } = await qb.getRawAndEntities();
 
-    const sql = `
-  SELECT
-    c.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  cld."userId",
-                 'addedAt', cld."addedAt"
-               )
-               ORDER BY cld."addedAt" DESC
-             )
-      FROM public."CommentsLikesDislikes" cld
-      WHERE cld."commentId" = c."id"
-        AND cld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+    // приклеиваем JSON-поля к сущностям
+    const byId = new Map(entities.map((e) => [e.id, e as any]));
+    for (const r of raw) {
+      const id = r['c_id']; // alias первичного ключа из 'c'
+      const ent = byId.get(id);
+      if (ent) {
+        ent.likes = r.likes ?? [];
+        ent.dislikes = r.dislikes ?? [];
+      }
+    }
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  cld."userId",
-                 'addedAt', cld."addedAt"
-               )
-               ORDER BY cld."addedAt" DESC
-             )
-      FROM public."CommentsLikesDislikes" cld
-      WHERE cld."commentId" = c."id"
-        AND cld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes,
-
-    COUNT(*) OVER()::int AS total_count
-
-  FROM public."Comments" c
-  WHERE ${where.join(' AND ')}
-  ORDER BY ${orderBy} ${direction}
-  LIMIT $${i} OFFSET $${i + 1};
-`;
-    params.push(pageSize, (pageNumber - 1) * pageSize);
-
-    const rows = await this.dataSource.query(sql, params);
-
-    const totalCount = rows[0]?.total_count ?? 0;
-
-    const items = rows.map((comment) =>
-      CommentViewDto.mapToView(comment, userId),
+    const items = entities.map((comment) =>
+      CommentViewDto.mapToView(comment as unknown as CommentRowDto, userId),
     );
 
     return PaginatedViewDto.mapToView({

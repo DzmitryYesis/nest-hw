@@ -34,6 +34,6 @@ export class UpdateCommentUseCase
       throw new ForbiddenException("You can't do it");
     }
 
-    await this.commentRepository.updateComment(comment.id, content);
+    await this.commentRepository.updateComment(comment, content);
   }
 }
