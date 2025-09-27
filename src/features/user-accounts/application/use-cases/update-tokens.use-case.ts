@@ -25,7 +25,7 @@ export class UpdateTokensUseCase
       command.refreshToken,
     );
 
-    const [currentSession] =
+    const currentSession =
       await this.sessionsRepository.findSessionByDeviceIdAndIat(
         deviceId,
         oldIat,

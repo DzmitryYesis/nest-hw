@@ -3,8 +3,6 @@ import { CryptoService, EmailNotificationService } from '../../../service';
 import { CreateUserDto } from '../../dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersService } from '../users.service';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { v4 as uuidV4 } from 'uuid';
 
 export class CreateUserCommand {
@@ -14,7 +12,6 @@ export class CreateUserCommand {
 @CommandHandler(CreateUserCommand)
 export class CreateUserUseCase implements ICommandHandler<CreateUserCommand> {
   constructor(
-    @InjectDataSource() protected dataSource: DataSource,
     private userRepository: UsersRepository,
     private usersService: UsersService,
     private cryptoService: CryptoService,
@@ -37,11 +34,7 @@ export class CreateUserUseCase implements ICommandHandler<CreateUserCommand> {
         email,
         passwordHash,
         false,
-      );
-
-      await this.userRepository.createConfirmationCode(
         confirmationCode,
-        userId,
       );
 
       this.emailNotificationService

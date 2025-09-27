@@ -1,73 +1,83 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import {
-  EmailConfirmationRowDto,
-  PasswordRecoveryRowDto,
-  UserRowDto,
-} from '../dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Not } from 'typeorm';
+import { EmailConfirmation, PasswordRecovery, User } from '../domain';
+import { add } from 'date-fns';
+import { UserStatusEnum } from '../../../constants';
 
 @Injectable()
 export class UsersRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
+    @InjectRepository(EmailConfirmation)
+    private readonly emailConfirmationRepo: Repository<EmailConfirmation>,
+    @InjectRepository(PasswordRecovery)
+    private readonly passwordRecoveryRepo: Repository<PasswordRecovery>,
+  ) {}
 
-  async findUserByLogin(login: string): Promise<UserRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."Users" WHERE "login" = $1 AND "userStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [login],
-    );
+  async findUserByLogin(login: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: {
+        login,
+        userStatus: Not(UserStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
   }
 
-  async findUserByEmail(email: string): Promise<UserRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."Users" WHERE "email" = $1 AND "userStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [email],
-    );
+  async findUserByEmail(email: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: {
+        email,
+        userStatus: Not(UserStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+      relations: { emailConfirmation: true },
+    });
   }
 
-  async findUserById(id: string): Promise<UserRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."Users" WHERE "id" = $1::uuid AND "userStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [id],
-    );
+  async findUserById(id: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: {
+        id,
+        userStatus: Not(UserStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
   }
 
-  async findUserByLoginOrEmail(data: string): Promise<UserRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."Users" WHERE ("email" = $1 OR "login" = $1) AND "userStatus" <> 'DELETED'
-    AND "deletedAt" IS NULL`,
-      [data],
-    );
+  async findUserByLoginOrEmail(data: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: [
+        {
+          email: data,
+          userStatus: Not(UserStatusEnum.DELETED),
+          deletedAt: IsNull(),
+        },
+        {
+          login: data,
+          userStatus: Not(UserStatusEnum.DELETED),
+          deletedAt: IsNull(),
+        },
+      ],
+    });
   }
 
   async findUserInfoByConfirmationCode(
     data: string,
-  ): Promise<EmailConfirmationRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."EmailConfirmations" WHERE "confirmationCode" = $1`,
-      [data],
-    );
-  }
-
-  async findUserConfirmationCodeById(
-    id: string,
-  ): Promise<EmailConfirmationRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."EmailConfirmations" WHERE "userId" = $1::uuid`,
-      [id],
-    );
+  ): Promise<EmailConfirmation | null> {
+    return await this.emailConfirmationRepo.findOne({
+      where: { confirmationCode: data },
+    });
   }
 
   async findUserInfoByRecoveryCode(
     data: string,
-  ): Promise<PasswordRecoveryRowDto[]> {
-    return await this.dataSource.query(
-      `SELECT * FROM public."PasswordRecovery" WHERE "recoveryCode" = $1`,
-      [data],
-    );
+  ): Promise<PasswordRecovery | null> {
+    return await this.passwordRecoveryRepo.findOne({
+      where: { recoveryCode: data },
+    });
   }
 
   async createUser(
@@ -75,83 +85,91 @@ export class UsersRepository {
     email: string,
     passwordHash: string,
     isAdmin: boolean,
+    confirmationCode: string | null = null,
   ): Promise<string> {
-    const sql = isAdmin
-      ? `INSERT INTO public."Users" ("login", "email", "passwordHash", "isConfirmed")
-       VALUES ($1, $2, $3, $4)
-       RETURNING "id"`
-      : `INSERT INTO public."Users" ("login", "email", "passwordHash")
-       VALUES ($1, $2, $3)
-       RETURNING "id"`;
+    let user: User;
 
-    const params = isAdmin
-      ? [login, email, passwordHash, isAdmin]
-      : [login, email, passwordHash];
+    if (!isAdmin) {
+      user = this.usersRepo.create({
+        login,
+        email,
+        passwordHash,
+        emailConfirmation: {
+          confirmationCode: confirmationCode as string,
+          expirationDate: add(new Date(), {
+            hours: 1,
+            minutes: 3,
+          }),
+        },
+      });
+    } else {
+      user = this.usersRepo.create({
+        login,
+        email,
+        passwordHash,
+        isConfirmed: true,
+      });
+    }
 
-    const res = await this.dataSource.query(sql, params);
+    await this.usersRepo.save(user);
 
-    return res[0].id;
-  }
-
-  async createConfirmationCode(
-    confirmationCode: string,
-    userId: string,
-  ): Promise<void> {
-    await this.dataSource.query(
-      `INSERT INTO public."EmailConfirmations" ("userId", "confirmationCode", "expirationDate")
-         VALUES ($1::uuid, $2, now() + interval '1 hour 3 minutes')`,
-      [userId, confirmationCode],
-    );
+    return user.id;
   }
 
   async createRecoveryCode(
     userId: string,
     recoveryCode: string,
   ): Promise<void> {
-    await this.dataSource.query(
-      `INSERT INTO public."PasswordRecovery" ("userId", "recoveryCode", "expirationDate") 
-       VALUES ($1::uuid, $2, now() + interval '1 hour 3 minutes') 
-       ON CONFLICT ("userId") DO 
-       UPDATE SET
-       "recoveryCode" = EXCLUDED."recoveryCode",
-       "expirationDate" = now() + interval '1 hour 3 minutes'`,
-      [userId, recoveryCode],
+    await this.passwordRecoveryRepo.upsert(
+      {
+        userId,
+        recoveryCode,
+        expirationDate: () => `now() + interval '1 hour 3 minutes'`,
+      } as any,
+      { conflictPaths: ['userId'] },
     );
   }
 
   async confirmUser(userId: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Users" SET "isConfirmed" = true WHERE "id" = $1::uuid`,
-      [userId],
-    );
+    await this.usersRepo.update({ id: userId }, { isConfirmed: true });
   }
 
   async updateConfirmationCode(
     confirmationCode: string,
     userId: string,
   ): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."EmailConfirmations" SET "confirmationCode" = $2, "expirationDate" = now() + interval '1 hour 3 minutes' WHERE "userId" = $1::uuid`,
-      [userId, confirmationCode],
+    await this.emailConfirmationRepo.update(
+      { userId },
+      {
+        confirmationCode,
+        expirationDate: add(new Date(), {
+          hours: 1,
+          minutes: 3,
+        }),
+      },
     );
   }
 
   async updateUserPassword(newPassword: string, userId: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Users" SET "passwordHash" = $1, "updatedAt" = now() WHERE "id" = $2::uuid`,
-      [newPassword, userId],
+    await this.usersRepo.update(
+      { id: userId },
+      {
+        passwordHash: newPassword,
+      },
     );
 
-    await this.dataSource.query(
-      `UPDATE public."PasswordRecovery" SET "lastUpdateDate" = now() WHERE "userId" = $1::uuid`,
-      [userId],
+    await this.passwordRecoveryRepo.update(
+      {
+        userId,
+      },
+      { updatedAt: new Date() },
     );
   }
 
-  async deleteUser(userId): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE public."Users" SET "userStatus" = 'DELETED', "deletedAt" = now() WHERE "id" = $1::uuid`,
-      [userId],
-    );
+  async deleteUser(user: User): Promise<void> {
+    user.userStatus = UserStatusEnum.DELETED;
+    user.deletedAt = new Date();
+
+    await this.usersRepo.save(user);
   }
 }

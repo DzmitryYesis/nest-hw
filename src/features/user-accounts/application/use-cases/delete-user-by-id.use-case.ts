@@ -25,12 +25,12 @@ export class DeleteUserByIdUseCase
       });
     }
 
-    const [user] = await this.usersRepository.findUserById(command.id);
+    const user = await this.usersRepository.findUserById(command.id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${command.id} not found`);
     }
 
-    await this.usersRepository.deleteUser(user.id);
+    await this.usersRepository.deleteUser(user);
   }
 }

@@ -20,7 +20,7 @@ export class LogoutUseCase implements ICommandHandler<LogoutCommand> {
       command.refreshToken,
     );
 
-    const [session] = await this.sessionsRepository.findSessionByDeviceIdAndIat(
+    const session = await this.sessionsRepository.findSessionByDeviceIdAndIat(
       deviceId,
       iat,
     );

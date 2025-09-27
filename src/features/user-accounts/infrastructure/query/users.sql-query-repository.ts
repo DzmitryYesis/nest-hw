@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Brackets, IsNull, Not, Repository } from 'typeorm';
 import { UserInfoViewDto, UsersQueryParams, UserViewDto } from '../../dto';
 import { PaginatedViewDto } from '../../../../core';
+import { User } from '../../domain';
+import { UserStatusEnum } from '../../../../constants';
 
 @Injectable()
 export class UsersSqlQueryRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
+  ) {}
 
   async getAllUsers(
     query: UsersQueryParams,
@@ -20,50 +25,44 @@ export class UsersSqlQueryRepository {
       searchLoginTerm,
     } = query;
 
+    const qb = this.usersRepo
+      .createQueryBuilder('u')
+      .where('u.userStatus <> :deleted', { deleted: UserStatusEnum.DELETED })
+      .andWhere('u.deletedAt IS NULL');
+
+    if (searchEmailTerm || searchLoginTerm) {
+      qb.andWhere(
+        new Brackets((qb2) => {
+          if (searchEmailTerm) {
+            qb2.orWhere('u.email ILIKE :email', {
+              email: `%${searchEmailTerm}%`,
+            });
+          }
+          if (searchLoginTerm) {
+            qb2.orWhere('u.login ILIKE :login', {
+              login: `%${searchLoginTerm}%`,
+            });
+          }
+        }),
+      );
+    }
+
+    const dir = sortDirection.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
     const sortMap: Record<string, string> = {
-      login: '"login" COLLATE "C"',
-      email: '"email" COLLATE "C"',
-      userStatus: '"userStatus"',
-      createdAt: '"createdAt"',
+      login: `"u"."login" COLLATE "C"`,
+      email: `"u"."email" COLLATE "C"`,
+      userStatus: 'u.userStatus',
+      createdAt: 'u.createdAt',
     };
-    const orderBy = sortMap[sortBy];
-    const direction = sortDirection.toUpperCase();
+    qb.orderBy(sortMap[sortBy] ?? 'u.createdAt', dir as 'ASC' | 'DESC');
 
-    const where: string[] = ['"userStatus" <> $1', '"deletedAt" IS NULL'];
-    const params: any[] = ['DELETED'];
-    let i = 2;
+    qb.skip((pageNumber - 1) * pageSize).take(pageSize);
 
-    const orParts: string[] = [];
-    if (searchEmailTerm) {
-      orParts.push(`"email" ILIKE $${i}`);
-      params.push(`%${searchEmailTerm}%`);
-      i++;
-    }
-    if (searchLoginTerm) {
-      orParts.push(`"login" ILIKE $${i}`);
-      params.push(`%${searchLoginTerm}%`);
-      i++;
-    }
-    if (orParts.length) where.push(`(${orParts.join(' OR ')})`);
-
-    const sql = `
-    SELECT
-      *,
-      COUNT(*) OVER()::int AS total_count
-    FROM public."Users"
-    WHERE ${where.join(' AND ')}
-    ORDER BY ${orderBy} ${direction}
-    LIMIT $${i} OFFSET $${i + 1};
-  `;
-    params.push(pageSize, (pageNumber - 1) * pageSize);
-
-    const rows = await this.dataSource.query(sql, params);
-
-    const totalCount = rows[0]?.total_count ?? 0;
-    const items = rows.map(UserViewDto.mapToView);
+    const [items, totalCount] = await qb.getManyAndCount();
+    const viewItems = items.map(UserViewDto.mapToView);
 
     return PaginatedViewDto.mapToView({
-      items,
+      items: viewItems,
       totalCount,
       page: pageNumber,
       size: pageSize,
@@ -71,28 +70,30 @@ export class UsersSqlQueryRepository {
   }
 
   async getUserById(id: string): Promise<UserViewDto> {
-    const res = await this.dataSource.query(
-      'SELECT * FROM public."Users" WHERE "id" = $1::uuid',
-      [id],
-    );
+    const user = await this.usersRepo.findOne({
+      where: {
+        id,
+        userStatus: Not(UserStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
 
-    if (res.length === 0) {
+    if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    return UserViewDto.mapToView(res[0]);
+    return UserViewDto.mapToView(user);
   }
 
   async getUserInfoById(id: string): Promise<UserInfoViewDto> {
-    const res = await this.dataSource.query(
-      'SELECT * FROM public."Users" WHERE "id" = $1::uuid',
-      [id],
-    );
+    const user = await this.usersRepo.findOne({
+      where: { id },
+    });
 
-    if (res.length === 0) {
+    if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    return UserInfoViewDto.mapToView(res[0]);
+    return UserInfoViewDto.mapToView(user);
   }
 }

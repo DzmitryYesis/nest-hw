@@ -1,127 +1,63 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { EmailConfirmation } from './email-confirmation.entity';
+import { UserStatusEnum } from '../../../constants';
+import { PasswordRecovery } from './password-recovery.entity';
 import {
-  EmailConfirmation,
-  EmailConfirmationSchema,
-} from './email-confirmation.schema';
-import { CreateUserDomainDto } from '../dto';
-import { HydratedDocument, Model } from 'mongoose';
-import { v4 as uuidV4 } from 'uuid';
-import { add } from 'date-fns';
-import {
-  emailMatch,
-  loginLength,
-  loginMatch,
-  UserStatusEnum,
-} from '../../../constants';
-import {
-  PasswordRecovery,
-  PasswordRecoverySchema,
-} from './password-recovery.schema';
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Session } from './session.entity';
 
-@Schema({ timestamps: true })
+@Entity('users')
 export class User {
-  @Prop({
-    required: true,
-    type: String,
-    ...loginLength,
-    match: loginMatch,
-    unique: true,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
   login: string;
 
-  @Prop({
-    required: true,
-    type: String,
-    match: emailMatch,
-    unique: true,
-  })
+  @Column({ unique: true })
   email: string;
 
-  @Prop({ required: true, type: String })
+  @Column()
   passwordHash: string;
 
-  @Prop({ type: EmailConfirmationSchema })
+  @OneToOne(() => EmailConfirmation, (ec) => ec.user, {
+    cascade: true,
+    eager: false,
+  })
   emailConfirmation: EmailConfirmation;
 
-  @Prop({ type: PasswordRecoverySchema })
+  @OneToOne(() => PasswordRecovery, (pr) => pr.user, {
+    cascade: true,
+    eager: false,
+  })
   passwordRecovery: PasswordRecovery;
 
-  @Prop({ type: Date })
+  @OneToMany(() => Session, (s) => s.user, { cascade: false, eager: false })
+  sessions: Session[];
+
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Prop({ type: Date })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Prop({ enum: UserStatusEnum, default: UserStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: UserStatusEnum,
+    enumName: 'user_status',
+    default: UserStatusEnum.ACTIVE,
+  })
   userStatus: UserStatusEnum;
 
-  @Prop({ type: Date, nullable: true, default: null })
+  @Column({ type: 'boolean', default: false })
+  isConfirmed: boolean;
+
+  @Column({ type: 'timestamptz', nullable: true, default: null })
   deletedAt: Date | null;
-
-  static createInstance(dto: CreateUserDomainDto): UserDocument {
-    const user = new this();
-
-    user.login = dto.login;
-    user.email = dto.email;
-    user.passwordHash = dto.passwordHash;
-
-    user.emailConfirmation = {
-      confirmationCode: uuidV4(),
-      expirationDate: add(new Date(), {
-        hours: 1,
-        minutes: 3,
-      }),
-      isConfirmed: dto.isConfirmed,
-    } as EmailConfirmation;
-
-    user.passwordRecovery = {
-      recoveryCode: null,
-      expirationDate: null,
-      lastUpdateDate: null,
-    } as PasswordRecovery;
-
-    return user as UserDocument;
-  }
-
-  confirmUser() {
-    this.emailConfirmation.isConfirmed = true;
-  }
-
-  changeConfirmationCode() {
-    this.emailConfirmation.confirmationCode = uuidV4();
-    this.emailConfirmation.expirationDate = add(new Date(), {
-      hours: 1,
-      minutes: 30,
-    });
-  }
-
-  createPasswordRecoveryCode() {
-    this.passwordRecovery.recoveryCode = uuidV4();
-    this.passwordRecovery.expirationDate = add(new Date(), {
-      hours: 1,
-      minutes: 30,
-    });
-  }
-
-  changePassword(password: string) {
-    this.passwordHash = password;
-    this.passwordRecovery = {
-      recoveryCode: null,
-      expirationDate: null,
-      lastUpdateDate: new Date(),
-    };
-  }
-
-  deleteUser() {
-    this.userStatus = UserStatusEnum.DELETED;
-    this.deletedAt = new Date();
-  }
 }
-
-export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.loadClass(User);
-
-export type UserDocument = HydratedDocument<User>;
-
-export type UserModelType = Model<UserDocument> & typeof User;

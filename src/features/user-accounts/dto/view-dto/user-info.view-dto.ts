@@ -1,11 +1,11 @@
-import { UserRowDto } from '../application-dto';
+import { User } from '../../domain';
 
 export class UserInfoViewDto {
   userId: string;
   login: string;
   email: string;
 
-  static mapToView(user: UserRowDto): UserInfoViewDto {
+  static mapToView(user: User): UserInfoViewDto {
     const dto = new UserInfoViewDto();
 
     dto.login = user.login;
