@@ -14,13 +14,13 @@ export class Blog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   name: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   description: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   websiteUrl: string;
 
   @Column({ type: 'boolean', default: false })

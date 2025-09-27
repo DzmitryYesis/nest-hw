@@ -4,7 +4,8 @@ import { PaginatedViewDto } from '../../../../../core';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { Comment } from '../../domain';
-import { CommentStatusEnum } from '../../../../../constants';
+import { CommentStatusEnum, LikeDislikeStatus } from '../../../../../constants';
+import { CommentRowDto } from '../../dto/input-dto/comment-row.dto';
 
 @Injectable()
 export class CommentQueryRepository {
@@ -30,7 +31,20 @@ export class CommentQueryRepository {
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    return CommentViewDto.mapToView(comment, userId);
+    const commentEntity = {
+      ...comment,
+      likes: comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.LIKE,
+      ),
+      dislikes: comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.DISLIKE,
+      ),
+    };
+
+    return CommentViewDto.mapToView(
+      commentEntity as unknown as CommentRowDto,
+      userId,
+    );
   }
 
   async getCommentsForPost(
@@ -109,7 +123,7 @@ export class CommentQueryRepository {
     }
 
     const items = entities.map((comment) =>
-      CommentViewDto.mapToView(comment, userId),
+      CommentViewDto.mapToView(comment as unknown as CommentRowDto, userId),
     );
 
     return PaginatedViewDto.mapToView({

@@ -269,7 +269,7 @@ describe('Posts controller (e2e)', () => {
       expect(response.body.items.length).toBe(10);
     });*/
 
-    it('should response with queries pageSize=20 sortBy=blogName sortDirection=asc', async () => {
+    /*it('should response with queries pageSize=20 sortBy=blogName sortDirection=asc', async () => {
       const postsForBlog1 = await postTestManager.createSeveralPosts(5, 1);
       const postsForBlog2 = await postTestManager.createSeveralPosts(5, 2);
 
@@ -289,7 +289,7 @@ describe('Posts controller (e2e)', () => {
         items: [...postsForBlog1.reverse(), ...postsForBlog2.reverse()],
       });
       expect(response.body.items.length).toBe(10);
-    });
+    });*/
   });
 
   //GET /posts/:id

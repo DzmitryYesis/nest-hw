@@ -18,19 +18,19 @@ export class Post {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   title: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   shortDescription: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   content: string;
 
   @Column('uuid')
   blogId: string;
 
-  @Column()
+  @Column({ collation: 'C' })
   blogName: string;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })

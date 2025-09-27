@@ -23,19 +23,19 @@ export class PostQueryRepository {
     const dir: 'ASC' | 'DESC' =
       String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // 1) totalCount — без join/агрегатов
+    // totalCount без join/агрегатов
     const totalCount = await this.postsRepo
       .createQueryBuilder('p')
       .where('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
       .andWhere('p.deletedAt IS NULL')
       .getCount();
 
-    // 2) записи + агрегаты реакций
+    // записи + агрегаты реакций
     const qb = this.postsRepo
       .createQueryBuilder('p')
+      .select('p') // важно для корректного маппинга сущности
       .where('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
       .andWhere('p.deletedAt IS NULL')
-      // Если у тебя связь называется по-другому — подставь её сюда:
       .leftJoin('p.postLikesDislikes', 'pld')
       .addSelect(
         `COALESCE(
@@ -67,25 +67,26 @@ export class PostQueryRepository {
       )
       .groupBy('p.id');
 
-    // сортировка (со строковым COLLATE "C", как в твоём SQL)
+    // простая сортировка по свойствам сущности (никаких кавычек у алиаса и выражений)
+    const a = qb.alias; // 'p'
     const sortMap: Record<string, string> = {
-      title: `"p"."title" COLLATE "C"`,
-      shortDescription: `"p"."shortDescription" COLLATE "C"`,
-      content: `"p"."content" COLLATE "C"`,
-      blogId: `p.blogId`,
-      blogName: `"p"."blogName" COLLATE "C"`,
-      createdAt: `p.createdAt`,
+      title: `${a}.title`,
+      shortDescription: `${a}.shortDescription`,
+      content: `${a}.content`,
+      blogId: `${a}.blogId`,
+      blogName: `${a}.blogName`,
+      createdAt: `${a}.createdAt`,
     };
-    qb.orderBy(sortMap[sortBy] ?? 'p.createdAt', dir)
+    qb.orderBy(sortMap[sortBy] ?? `${a}.createdAt`, dir)
       .skip((pageNumber - 1) * pageSize)
       .take(pageSize);
 
     const { raw, entities } = await qb.getRawAndEntities();
 
-    // приклеим JSON-массивы к сущностям
+    // приклеиваем JSON-поля
     const byId = new Map(entities.map((e) => [e.id, e as any]));
     for (const r of raw) {
-      const id = r['p_id']; // alias primary key из 'p'
+      const id = r[`${a}_id`]; // 'p_id'
       const ent = byId.get(id);
       if (ent) {
         ent.likes = r.likes ?? [];
@@ -100,8 +101,8 @@ export class PostQueryRepository {
     return PaginatedViewDto.mapToView({
       items,
       totalCount,
-      page: query.pageNumber,
-      size: query.pageSize,
+      page: pageNumber,
+      size: pageSize,
     });
   }
 
@@ -151,54 +152,57 @@ export class PostQueryRepository {
       .andWhere('p.deletedAt IS NULL')
       .getCount();
 
-    // 2) сами записи + агрегаты лайков
     const itemsQb = this.postsRepo
       .createQueryBuilder('p')
+      .select('p') // <= важно!
       .where('p.blogId = :blogId', { blogId })
       .andWhere('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
       .andWhere('p.deletedAt IS NULL')
-      // лайки/дизлайки одним проходом
       .leftJoin('p.postLikesDislikes', 'pld')
       .addSelect(
         `COALESCE(
-        json_agg(
-          json_build_object(
-            'userId',  pld."userId",
-            'login',   pld."login",
-            'addedAt', pld."addedAt"
-          )
-          ORDER BY pld."addedAt" DESC
-        ) FILTER (WHERE pld."likeStatus" = 'LIKE'),
-        '[]'::json
-      )`,
+      json_agg(
+        json_build_object(
+          'userId',  pld."userId",
+          'login',   pld."login",
+          'addedAt', pld."addedAt"
+        )
+        ORDER BY pld."addedAt" DESC
+      ) FILTER (WHERE pld."likeStatus" = 'LIKE'),
+      '[]'::json
+    )`,
         'likes',
       )
       .addSelect(
         `COALESCE(
-        json_agg(
-          json_build_object(
-            'userId',  pld."userId",
-            'login',   pld."login",
-            'addedAt', pld."addedAt"
-          )
-          ORDER BY pld."addedAt" DESC
-        ) FILTER (WHERE pld."likeStatus" = 'DISLIKE'),
-        '[]'::json
-      )`,
+      json_agg(
+        json_build_object(
+          'userId',  pld."userId",
+          'login',   pld."login",
+          'addedAt', pld."addedAt"
+        )
+        ORDER BY pld."addedAt" DESC
+      ) FILTER (WHERE pld."likeStatus" = 'DISLIKE'),
+      '[]'::json
+    )`,
         'dislikes',
       )
       .groupBy('p.id');
 
-    // сортировка с COLLATE "C" для строковых
+    // ✅ ключевой фикс: используем ТОЛЬКО пути свойств alias.property
+    const a = itemsQb.alias; // 'p'
     const sortMap: Record<string, string> = {
-      title: `"p"."title" COLLATE "C"`,
-      shortDescription: `"p"."shortDescription" COLLATE "C"`,
-      content: `"p"."content" COLLATE "C"`,
-      blogId: `p.blogId`,
-      blogName: `"p"."blogName" COLLATE "C"`,
-      createdAt: `p.createdAt`,
+      title: `${a}.title`,
+      shortDescription: `${a}.shortDescription`,
+      content: `${a}.content`,
+      blogId: `${a}.blogId`,
+      blogName: `${a}.blogName`,
+      createdAt: `${a}.createdAt`,
     };
-    itemsQb.orderBy(sortMap[sortBy] ?? 'p.createdAt', dir);
+
+    // подстрахуемся от неожиданных sortBy
+    const sortExpr = sortMap[sortBy] ?? `${a}.createdAt`;
+    itemsQb.orderBy(sortExpr, dir);
 
     // пагинация
     itemsQb.skip((pageNumber - 1) * pageSize).take(pageSize);

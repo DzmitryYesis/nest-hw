@@ -1,3 +1,5 @@
+import { CommentLikeDislike } from '../../domain/comment-like-dislike.entity';
+
 export class CommentRowDto {
   id: string;
   postId: string;
@@ -8,4 +10,6 @@ export class CommentRowDto {
   updatedAt: string | null;
   deletedAt: string | null;
   commentStatus: string;
+  likes: CommentLikeDislike[];
+  dislikes: CommentLikeDislike[];
 }
