@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { Brackets, IsNull, Not, Repository } from 'typeorm';
 import { UserInfoViewDto, UsersQueryParams, UserViewDto } from '../../dto';
 import { PaginatedViewDto } from '../../../../core';
 import { User } from '../../domain';
@@ -30,11 +30,21 @@ export class UsersSqlQueryRepository {
       .where('u.userStatus <> :deleted', { deleted: UserStatusEnum.DELETED })
       .andWhere('u.deletedAt IS NULL');
 
-    if (searchEmailTerm) {
-      qb.andWhere('u.email ILIKE :email', { email: `%${searchEmailTerm}%` });
-    }
-    if (searchLoginTerm) {
-      qb.andWhere('u.login ILIKE :login', { login: `%${searchLoginTerm}%` });
+    if (searchEmailTerm || searchLoginTerm) {
+      qb.andWhere(
+        new Brackets((qb2) => {
+          if (searchEmailTerm) {
+            qb2.orWhere('u.email ILIKE :email', {
+              email: `%${searchEmailTerm}%`,
+            });
+          }
+          if (searchLoginTerm) {
+            qb2.orWhere('u.login ILIKE :login', {
+              login: `%${searchLoginTerm}%`,
+            });
+          }
+        }),
+      );
     }
 
     const dir = sortDirection.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';

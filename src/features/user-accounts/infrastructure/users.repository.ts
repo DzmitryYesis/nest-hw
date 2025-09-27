@@ -155,8 +155,14 @@ export class UsersRepository {
       { id: userId },
       {
         passwordHash: newPassword,
-        passwordRecovery: { updatedAt: new Date() },
       },
+    );
+
+    await this.passwordRecoveryRepo.update(
+      {
+        userId,
+      },
+      { updatedAt: new Date() },
     );
   }
 
