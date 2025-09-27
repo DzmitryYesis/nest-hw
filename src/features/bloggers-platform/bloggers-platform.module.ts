@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
-import { BlogController, BlogQueryRepository, BlogRepository } from './blog';
+import {
+  Blog,
+  BlogController,
+  BlogQueryRepository,
+  BlogRepository,
+} from './blog';
 import { UtilitiesApplicationModule } from '../service';
 import { UserAccountsModule } from '../user-accounts';
 import { BlogExistsConstraint } from './post/validators/blog-exist.validator';
@@ -9,7 +14,7 @@ import { GetBlogByIdUseCase } from './blog/application/use-cases/get-blog-by-id.
 import { UpdateBlogUseCase } from './blog/application/use-cases/update-blog.use-case';
 import { BlogSAController } from './blog/api/blog.sa.controller';
 import { DeleteBlogUseCase } from './blog/application/use-cases/delete-blog.use-case';
-import { PostQueryRepository, PostRepository } from './post';
+import { Post, PostQueryRepository, PostRepository } from './post';
 import { CreatePostForBlogUseCase } from './blog/application/use-cases/create-post-for-blog.use-case';
 import { DeletePostUseCase } from './post/application/use-cases/delete-post.use-case';
 import { GetPostByIdUseCase } from './post/application/use-cases/get-post-by-id.use-case';
@@ -21,10 +26,14 @@ import { ChangeCommentLikeStatusUseCase } from './comment/application/use-cases/
 import { ChangePostLikeStatusUseCase } from './post/application/use-cases/change-post-like-status.use-case';
 import { CreateCommentForPostUseCase } from './post/application/use-cases/create-comment-for-post.use-case';
 import {
+  Comment,
   CommentController,
   CommentQueryRepository,
   CommentRepository,
 } from './comment';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostLikeDislike } from './post/domain/post-like-dislike.entity';
+import { CommentLikeDislike } from './comment/domain/comment-like-dislike.entity';
 
 const useCases = [
   CreateBlogUseCase,
@@ -45,7 +54,18 @@ const useCases = [
 
 //TODO create method for logic when try to find entity(create common service where try to find entity)
 @Module({
-  imports: [UtilitiesApplicationModule, UserAccountsModule, CqrsModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      Blog,
+      Post,
+      Comment,
+      PostLikeDislike,
+      CommentLikeDislike,
+    ]),
+    UtilitiesApplicationModule,
+    UserAccountsModule,
+    CqrsModule,
+  ],
   controllers: [
     BlogController,
     BlogSAController,

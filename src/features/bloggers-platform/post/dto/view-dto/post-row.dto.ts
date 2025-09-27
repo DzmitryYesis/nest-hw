@@ -1,4 +1,4 @@
-import { BaseLikesDislikesDBData } from '../../../../../core';
+import { PostLikeDislike } from '../../domain/post-like-dislike.entity';
 
 export class PostRowDto {
   id: string;
@@ -10,6 +10,6 @@ export class PostRowDto {
   createdAt: string;
   updatedAt: string;
   postStatus: string;
-  likes: BaseLikesDislikesDBData[];
-  dislikes: BaseLikesDislikesDBData[];
+  likes: PostLikeDislike[];
+  dislikes: PostLikeDislike[];
 }

@@ -1,79 +1,101 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PostsQueryParams, PostViewDto } from '../../dto';
 import { PaginatedViewDto } from '../../../../../core';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { Post } from '../../domain';
+import { LikeDislikeStatus, PostStatusEnum } from '../../../../../constants';
+import { PostRowDto } from '../../dto/view-dto/post-row.dto';
 
 @Injectable()
 export class PostQueryRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Post)
+    private readonly postsRepo: Repository<Post>,
+  ) {}
 
   async getAllPosts(
     query: PostsQueryParams,
     userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const { pageNumber, pageSize, sortBy, sortDirection } = query;
+    const dir: 'ASC' | 'DESC' =
+      String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
+    // 1) totalCount — без join/агрегатов
+    const totalCount = await this.postsRepo
+      .createQueryBuilder('p')
+      .where('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
+      .andWhere('p.deletedAt IS NULL')
+      .getCount();
+
+    // 2) записи + агрегаты реакций
+    const qb = this.postsRepo
+      .createQueryBuilder('p')
+      .where('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
+      .andWhere('p.deletedAt IS NULL')
+      // Если у тебя связь называется по-другому — подставь её сюда:
+      .leftJoin('p.postLikesDislikes', 'pld')
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  pld."userId",
+            'login',   pld."login",
+            'addedAt', pld."addedAt"
+          )
+          ORDER BY pld."addedAt" DESC
+        ) FILTER (WHERE pld."likeStatus" = 'LIKE'),
+        '[]'::json
+      )`,
+        'likes',
+      )
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  pld."userId",
+            'login',   pld."login",
+            'addedAt', pld."addedAt"
+          )
+          ORDER BY pld."addedAt" DESC
+        ) FILTER (WHERE pld."likeStatus" = 'DISLIKE'),
+        '[]'::json
+      )`,
+        'dislikes',
+      )
+      .groupBy('p.id');
+
+    // сортировка (со строковым COLLATE "C", как в твоём SQL)
     const sortMap: Record<string, string> = {
-      title: '"title" COLLATE "C"',
-      shortDescription: '"shortDescription" COLLATE "C"',
-      content: '"content" COLLATE "C"',
-      blogId: '"blogId"',
-      blogName: '"blogName" COLLATE "C"',
-      createdAt: '"createdAt"',
+      title: `"p"."title" COLLATE "C"`,
+      shortDescription: `"p"."shortDescription" COLLATE "C"`,
+      content: `"p"."content" COLLATE "C"`,
+      blogId: `p.blogId`,
+      blogName: `"p"."blogName" COLLATE "C"`,
+      createdAt: `p.createdAt`,
     };
-    const orderBy = sortMap[sortBy];
-    const direction = sortDirection.toUpperCase();
+    qb.orderBy(sortMap[sortBy] ?? 'p.createdAt', dir)
+      .skip((pageNumber - 1) * pageSize)
+      .take(pageSize);
 
-    const where: string[] = ['"postStatus" <> $1', '"deletedAt" IS NULL'];
-    const params: any[] = ['DELETED'];
-    const i = 2;
+    const { raw, entities } = await qb.getRawAndEntities();
 
-    const sql = `
-  SELECT
-    p.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+    // приклеим JSON-массивы к сущностям
+    const byId = new Map(entities.map((e) => [e.id, e as any]));
+    for (const r of raw) {
+      const id = r['p_id']; // alias primary key из 'p'
+      const ent = byId.get(id);
+      if (ent) {
+        ent.likes = r.likes ?? [];
+        ent.dislikes = r.dislikes ?? [];
+      }
+    }
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes,
-
-    COUNT(*) OVER()::int AS total_count
-
-  FROM public."Posts" p
-  WHERE ${where.join(' AND ')}
-  ORDER BY ${orderBy} ${direction}
-  LIMIT $${i} OFFSET $${i + 1};
-`;
-    params.push(pageSize, (pageNumber - 1) * pageSize);
-
-    const rows = await this.dataSource.query(sql, params);
-
-    const totalCount = rows[0]?.total_count ?? 0;
-
-    const items = rows.map((post) => PostViewDto.mapToView(post, userId));
+    const items = entities.map((post) =>
+      PostViewDto.mapToView(post as unknown as PostRowDto, userId),
+    );
 
     return PaginatedViewDto.mapToView({
       items,
@@ -84,121 +106,120 @@ export class PostQueryRepository {
   }
 
   async getPostById(id: string, userId?: string): Promise<PostViewDto> {
-    const res = await this.dataSource.query(
-      `SELECT
-    p.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+    const post = await this.postsRepo.findOne({
+      where: {
+        id,
+        postStatus: Not(PostStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+      relations: {
+        postLikesDislikes: true,
+      },
+    });
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes
-  
-  FROM public."Posts" p
-   WHERE "id" = $1::uuid AND "postStatus" <> 'DELETED'
-       AND "deletedAt" IS NULL`,
-      [id],
-    );
-
-    if (res.length === 0) {
+    if (!post) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
 
-    return PostViewDto.mapToView(res[0], userId);
+    const postEntity = {
+      ...post,
+      likes: post.postLikesDislikes.filter(
+        (p) => p.likeStatus === LikeDislikeStatus.LIKE,
+      ),
+      dislikes: post.postLikesDislikes.filter(
+        (p) => p.likeStatus === LikeDislikeStatus.DISLIKE,
+      ),
+    };
+
+    return PostViewDto.mapToView(postEntity as unknown as PostRowDto, userId);
   }
 
   async getPostsForBlog(
-    id: string,
+    blogId: string,
     query: PostsQueryParams,
     userId?: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const { pageNumber, pageSize, sortBy, sortDirection } = query;
+    const dir: 'ASC' | 'DESC' =
+      String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
+    // 1) count — без join/агрегаций (быстро и просто)
+    const totalCount = await this.postsRepo
+      .createQueryBuilder('p')
+      .where('p.blogId = :blogId', { blogId })
+      .andWhere('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
+      .andWhere('p.deletedAt IS NULL')
+      .getCount();
+
+    // 2) сами записи + агрегаты лайков
+    const itemsQb = this.postsRepo
+      .createQueryBuilder('p')
+      .where('p.blogId = :blogId', { blogId })
+      .andWhere('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
+      .andWhere('p.deletedAt IS NULL')
+      // лайки/дизлайки одним проходом
+      .leftJoin('p.postLikesDislikes', 'pld')
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  pld."userId",
+            'login',   pld."login",
+            'addedAt', pld."addedAt"
+          )
+          ORDER BY pld."addedAt" DESC
+        ) FILTER (WHERE pld."likeStatus" = 'LIKE'),
+        '[]'::json
+      )`,
+        'likes',
+      )
+      .addSelect(
+        `COALESCE(
+        json_agg(
+          json_build_object(
+            'userId',  pld."userId",
+            'login',   pld."login",
+            'addedAt', pld."addedAt"
+          )
+          ORDER BY pld."addedAt" DESC
+        ) FILTER (WHERE pld."likeStatus" = 'DISLIKE'),
+        '[]'::json
+      )`,
+        'dislikes',
+      )
+      .groupBy('p.id');
+
+    // сортировка с COLLATE "C" для строковых
     const sortMap: Record<string, string> = {
-      title: '"title" COLLATE "C"',
-      shortDescription: '"shortDescription" COLLATE "C"',
-      content: '"content" COLLATE "C"',
-      blogId: '"blogId"',
-      blogName: '"blogName"',
-      createdAt: '"createdAt"',
+      title: `"p"."title" COLLATE "C"`,
+      shortDescription: `"p"."shortDescription" COLLATE "C"`,
+      content: `"p"."content" COLLATE "C"`,
+      blogId: `p.blogId`,
+      blogName: `"p"."blogName" COLLATE "C"`,
+      createdAt: `p.createdAt`,
     };
-    const orderBy = sortMap[sortBy];
-    const direction = sortDirection.toUpperCase();
+    itemsQb.orderBy(sortMap[sortBy] ?? 'p.createdAt', dir);
 
-    const where: string[] = [
-      '"blogId" = $1',
-      '"postStatus" <> $2',
-      '"deletedAt" IS NULL',
-    ];
-    const params: any[] = [id, 'DELETED'];
-    const i = 3;
+    // пагинация
+    itemsQb.skip((pageNumber - 1) * pageSize).take(pageSize);
 
-    const sql = `
-  SELECT
-    p.*,
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'LIKE'::like_status
-    ), '[]'::json) AS likes,
+    // получаем и сущности, и сырые колонки с json
+    const { raw, entities } = await itemsQb.getRawAndEntities();
 
-    COALESCE((
-      SELECT json_agg(
-               json_build_object(
-                 'userId',  pld."userId",
-                 'login',   pld."login",
-                 'addedAt', pld."addedAt"
-               )
-               ORDER BY pld."addedAt" DESC
-             )
-      FROM public."PostsLikesDislikes" pld
-      WHERE pld."postId" = p."id"
-        AND pld."likeStatus" = 'DISLIKE'::like_status
-    ), '[]'::json) AS dislikes,
+    // приклеим likes/dislikes к сущностям
+    const byId = new Map(entities.map((e) => [e.id, e as any]));
+    for (const r of raw) {
+      const id = r['p_id']; // alias поля id из таблицы p.*
+      const ent = byId.get(id);
+      if (ent) {
+        ent.likes = r.likes ?? [];
+        ent.dislikes = r.dislikes ?? [];
+      }
+    }
 
-    COUNT(*) OVER()::int AS total_count
-
-  FROM public."Posts" p
-  WHERE ${where.join(' AND ')}
-  ORDER BY ${orderBy} ${direction}
-  LIMIT $${i} OFFSET $${i + 1};
-`;
-    params.push(pageSize, (pageNumber - 1) * pageSize);
-
-    const rows = await this.dataSource.query(sql, params);
-
-    const totalCount = rows[0]?.total_count ?? 0;
-
-    const items = rows.map((post) => PostViewDto.mapToView(post, userId));
+    const items = entities.map((post) =>
+      PostViewDto.mapToView(post as unknown as PostRowDto, userId),
+    );
 
     return PaginatedViewDto.mapToView({
       items,

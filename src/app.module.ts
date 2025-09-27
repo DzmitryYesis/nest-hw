@@ -4,6 +4,7 @@ import { UserAccountsModule } from './features/user-accounts';
 import { UtilitiesApplicationModule } from './features/service';
 import { UserIdMiddleware } from './core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BloggersPlatformModule } from './features/bloggers-platform';
 
 //TODO info DB put into env or config module
 @Module({
@@ -19,7 +20,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       synchronize: true,
     }),
     UserAccountsModule,
-    //BloggersPlatformModule,
+    BloggersPlatformModule,
     TestingModule,
     UtilitiesApplicationModule,
   ],

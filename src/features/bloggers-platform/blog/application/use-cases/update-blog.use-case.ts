@@ -15,7 +15,7 @@ export class UpdateBlogCommand {
 export class UpdateBlogUseCase implements ICommandHandler<UpdateBlogCommand> {
   constructor(private blogRepository: BlogRepository) {}
 
-  async execute(command: UpdateBlogCommand): Promise<boolean> {
+  async execute(command: UpdateBlogCommand): Promise<void> {
     if (!isUuidV4(command.id)) {
       throw new BadRequestException({
         errorsMessages: [

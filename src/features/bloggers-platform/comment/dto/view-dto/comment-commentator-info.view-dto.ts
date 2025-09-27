@@ -1,4 +1,4 @@
-import { CommentatorInfo } from '../../domain';
+import { CommentatorInfo } from '../../domain/commentator-info.schema';
 
 export class CommentCommentatorInfoViewDto {
   userId: string;

@@ -1,5 +1,5 @@
 import { UserLikeStatus } from '../../../../../constants';
-import { BaseLikesDislikesDBData } from '../../../../../core';
+import { CommentLikeDislike } from '../../domain/comment-like-dislike.entity';
 
 export class CommentsLikesDislikesInfoViewDto {
   likesCount: number;
@@ -7,8 +7,8 @@ export class CommentsLikesDislikesInfoViewDto {
   myStatus: UserLikeStatus;
 
   constructor(
-    likes: BaseLikesDislikesDBData[],
-    dislikes: BaseLikesDislikesDBData[],
+    likes: CommentLikeDislike[],
+    dislikes: CommentLikeDislike[],
     userId?: string,
   ) {
     this.likesCount = likes.length;
@@ -21,8 +21,8 @@ export class CommentsLikesDislikesInfoViewDto {
   }
 
   private static getUserLikeStatus(
-    likes: BaseLikesDislikesDBData[],
-    dislikes: BaseLikesDislikesDBData[],
+    likes: CommentLikeDislike[],
+    dislikes: CommentLikeDislike[],
     userId?: string,
   ): UserLikeStatus {
     if (userId && likes.some((item) => item.userId === userId)) {

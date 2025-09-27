@@ -28,6 +28,6 @@ export class DeleteCommentUseCase
       throw new ForbiddenException("You can't do it");
     }
 
-    await this.commentRepository.deleteComment(id);
+    await this.commentRepository.deleteComment(comment);
   }
 }

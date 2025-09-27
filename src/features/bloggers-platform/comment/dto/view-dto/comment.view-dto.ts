@@ -1,6 +1,7 @@
 import { CommentCommentatorInfoViewDto } from './comment-commentator-info.view-dto';
 import { CommentsLikesDislikesInfoViewDto } from './comments-likes-dislikes-info.view-dto';
-import { CommentWithLikesRowDto } from '../input-dto/comment-with-likes-row.dto';
+import { Comment } from '../../domain';
+import { LikeDislikeStatus } from '../../../../../constants';
 
 export class CommentViewDto {
   id: string;
@@ -9,10 +10,7 @@ export class CommentViewDto {
   createdAt: Date;
   likesInfo: CommentsLikesDislikesInfoViewDto;
 
-  static mapToView(
-    comment: CommentWithLikesRowDto,
-    userId?: string,
-  ): CommentViewDto {
+  static mapToView(comment: Comment, userId?: string): CommentViewDto {
     const dto = new CommentViewDto();
 
     dto.id = comment.id;
@@ -25,8 +23,12 @@ export class CommentViewDto {
     });
 
     dto.likesInfo = new CommentsLikesDislikesInfoViewDto(
-      comment.likes,
-      comment.dislikes,
+      comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.LIKE,
+      ),
+      comment.commentLikesDislikes.filter(
+        (c) => c.likeStatus === LikeDislikeStatus.DISLIKE,
+      ),
       userId,
     );
 

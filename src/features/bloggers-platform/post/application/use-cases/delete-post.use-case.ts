@@ -18,6 +18,6 @@ export class DeletePostUseCase implements ICommandHandler<DeletePostCommand> {
       throw new NotFoundException(`Post with id ${postId} not found`);
     }
 
-    await this.postRepository.deletePost(postId);
+    await this.postRepository.deletePost(post);
   }
 }

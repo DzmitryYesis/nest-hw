@@ -1,60 +1,48 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { BlogInputDto, CreateBlogDomainDto } from '../dto';
-import { HydratedDocument, Model } from 'mongoose';
 import { BlogStatusEnum } from '../../../../constants';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Post } from '../../post';
 
-@Schema({ timestamps: true })
+@Entity('blogs')
 export class Blog {
-  @Prop({ required: true, type: String })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
   name: string;
 
-  @Prop({ required: true, type: String })
+  @Column()
   description: string;
 
-  @Prop({ required: true, type: String })
+  @Column()
   websiteUrl: string;
 
-  @Prop({ required: true, type: Boolean, default: false })
+  @Column({ type: 'boolean', default: false })
   isMembership: boolean;
 
-  @Prop({ type: Date })
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Prop({ type: Date })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Prop({ enum: BlogStatusEnum, default: BlogStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: BlogStatusEnum,
+    enumName: 'blog_status',
+    default: BlogStatusEnum.ACTIVE,
+  })
   blogStatus: BlogStatusEnum;
 
-  @Prop({ type: Date, nullable: true, default: null })
+  @Column({ type: 'timestamptz', nullable: true, default: null })
   deletedAt: Date | null;
 
-  static createInstance(dto: CreateBlogDomainDto): BlogDocument {
-    const blog = new this();
-
-    blog.name = dto.name;
-    blog.description = dto.description;
-    blog.websiteUrl = dto.websiteUrl;
-
-    return blog as BlogDocument;
-  }
-
-  updateBlog(dto: BlogInputDto): void {
-    this.name = dto.name;
-    this.description = dto.description;
-    this.websiteUrl = dto.websiteUrl;
-  }
-
-  deleteBlog(): void {
-    this.blogStatus = BlogStatusEnum.DELETED;
-    this.deletedAt = new Date();
-  }
+  @OneToMany(() => Post, (post) => post.blog, { cascade: false })
+  posts: Post[];
 }
-
-export const BlogSchema = SchemaFactory.createForClass(Blog);
-
-BlogSchema.loadClass(Blog);
-
-export type BlogDocument = HydratedDocument<Blog>;
-
-export type BlogModelType = Model<BlogDocument> & typeof Blog;

@@ -1,12 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { BlogsQueryParams, BlogViewDto } from '../../dto';
 import { PaginatedViewDto } from '../../../../../core';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { Blog } from '../../domain';
+import { BlogStatusEnum } from '../../../../../constants';
 
 @Injectable()
 export class BlogQueryRepository {
-  constructor(@InjectDataSource() protected dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() protected dataSource: DataSource,
+    @InjectRepository(Blog)
+    private readonly blogsRepo: Repository<Blog>,
+  ) {}
 
   async getAllBlogs(
     query: BlogsQueryParams,
@@ -14,47 +20,35 @@ export class BlogQueryRepository {
     const { pageNumber, pageSize, sortBy, sortDirection, searchNameTerm } =
       query;
 
-    const sortMap: Record<string, string> = {
-      name: '"name" COLLATE "C"',
-      description: '"description" COLLATE "C"',
-      websiteUrl: '"websiteUrl" COLLATE "C"',
-      blogStatus: '"blogStatus"',
-      createdAt: '"createdAt"',
-    };
-    const orderBy = sortMap[sortBy];
-    const direction = sortDirection.toUpperCase();
+    const qb = this.blogsRepo
+      .createQueryBuilder('b')
+      .where('b.blogStatus <> :deleted', { deleted: BlogStatusEnum.DELETED })
+      .andWhere('b.deletedAt IS NULL');
 
-    const where: string[] = ['"blogStatus" <> $1', '"deletedAt" IS NULL'];
-    const params: any[] = ['DELETED'];
-    let i = 2;
-
-    const orParts: string[] = [];
     if (searchNameTerm) {
-      orParts.push(`"name" ILIKE $${i}`);
-      params.push(`%${searchNameTerm}%`);
-      i++;
+      qb.andWhere('b.name ILIKE :name', { name: `%${searchNameTerm}%` });
     }
-    if (orParts.length) where.push(`(${orParts.join(' OR ')})`);
 
-    const sql = `
-    SELECT
-      *,
-      COUNT(*) OVER()::int AS total_count
-    FROM public."Blogs"
-    WHERE ${where.join(' AND ')}
-    ORDER BY ${orderBy} ${direction}
-    LIMIT $${i} OFFSET $${i + 1};
-  `;
-    params.push(pageSize, (pageNumber - 1) * pageSize);
+    const dir: 'ASC' | 'DESC' =
+      String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    const rows = await this.dataSource.query(sql, params);
+    const sortMap: Record<string, string> = {
+      name: `"b"."name" COLLATE "C"`,
+      description: `"b"."description" COLLATE "C"`,
+      websiteUrl: `"b"."websiteUrl" COLLATE "C"`,
+      blogStatus: 'b.blogStatus',
+      createdAt: 'b.createdAt',
+    };
 
-    const totalCount = rows[0]?.total_count ?? 0;
+    qb.orderBy(sortMap[sortBy] ?? 'b.createdAt', dir);
+    qb.skip((pageNumber - 1) * pageSize).take(pageSize);
 
-    const items = rows.map(BlogViewDto.mapToView);
+    const [items, totalCount] = await qb.getManyAndCount();
+
+    const viewItems = items.map(BlogViewDto.mapToView);
 
     return PaginatedViewDto.mapToView({
-      items,
+      items: viewItems,
       totalCount,
       page: query.pageNumber,
       size: query.pageSize,
@@ -62,16 +56,18 @@ export class BlogQueryRepository {
   }
 
   async getBlogById(id: string): Promise<BlogViewDto> {
-    const res = await this.dataSource.query(
-      `SELECT * FROM public."Blogs" WHERE "id" = $1::uuid AND "blogStatus" <> 'DELETED'
-       AND "deletedAt" IS NULL`,
-      [id],
-    );
+    const blog = await this.blogsRepo.findOne({
+      where: {
+        id,
+        blogStatus: Not(BlogStatusEnum.DELETED),
+        deletedAt: IsNull(),
+      },
+    });
 
-    if (res.length === 0) {
+    if (!blog) {
       throw new NotFoundException(`Blog with id ${id} not found`);
     }
 
-    return BlogViewDto.mapToView(res[0]);
+    return BlogViewDto.mapToView(blog);
   }
 }
