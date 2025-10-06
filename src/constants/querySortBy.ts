@@ -25,6 +25,12 @@ export enum CommentsSortByEnum {
   CREATED_AT = 'createdAt',
 }
 
+export enum QuestionsSortByEnum {
+  BODY = 'body',
+  PUBLISHED = 'published',
+  CREATED_AT = 'createdAt',
+}
+
 export enum SortDirectionEnum {
   ASC = 'asc',
   DESC = 'desc',

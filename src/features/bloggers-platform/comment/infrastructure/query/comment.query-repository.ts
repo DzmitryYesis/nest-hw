@@ -56,7 +56,6 @@ export class CommentQueryRepository {
     const dir: 'ASC' | 'DESC' =
       String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // 1) totalCount — без join/агрегатов
     const totalCount = await this.commentsRepo
       .createQueryBuilder('c')
       .where('c.postId = :postId', { postId })
@@ -64,13 +63,11 @@ export class CommentQueryRepository {
       .andWhere('c.deletedAt IS NULL')
       .getCount();
 
-    // 2) сами записи + JSON-агрегаты реакций
     const qb = this.commentsRepo
       .createQueryBuilder('c')
       .where('c.postId = :postId', { postId })
       .andWhere('c.commentStatus <> :del', { del: CommentStatusEnum.DELETED })
       .andWhere('c.deletedAt IS NULL')
-      // Замените 'c.commentLikes' на имя вашей связи, если иное (например, 'c.commentLikesDislikes')
       .leftJoin('c.commentLikesDislikes', 'cl')
       .addSelect(
         `COALESCE(
@@ -100,7 +97,6 @@ export class CommentQueryRepository {
       )
       .groupBy('c.id');
 
-    // сортировка
     const sortMap: Record<string, string> = {
       content: `"c"."content" COLLATE "C"`,
       createdAt: `c.createdAt`,
@@ -111,10 +107,9 @@ export class CommentQueryRepository {
 
     const { raw, entities } = await qb.getRawAndEntities();
 
-    // приклеиваем JSON-поля к сущностям
     const byId = new Map(entities.map((e) => [e.id, e as any]));
     for (const r of raw) {
-      const id = r['c_id']; // alias первичного ключа из 'c'
+      const id = r['c_id'];
       const ent = byId.get(id);
       if (ent) {
         ent.likes = r.likes ?? [];

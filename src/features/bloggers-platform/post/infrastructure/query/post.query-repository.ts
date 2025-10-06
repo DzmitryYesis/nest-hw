@@ -144,7 +144,6 @@ export class PostQueryRepository {
     const dir: 'ASC' | 'DESC' =
       String(sortDirection).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // 1) count — без join/агрегаций (быстро и просто)
     const totalCount = await this.postsRepo
       .createQueryBuilder('p')
       .where('p.blogId = :blogId', { blogId })
@@ -154,7 +153,7 @@ export class PostQueryRepository {
 
     const itemsQb = this.postsRepo
       .createQueryBuilder('p')
-      .select('p') // <= важно!
+      .select('p')
       .where('p.blogId = :blogId', { blogId })
       .andWhere('p.postStatus <> :del', { del: PostStatusEnum.DELETED })
       .andWhere('p.deletedAt IS NULL')
@@ -189,8 +188,7 @@ export class PostQueryRepository {
       )
       .groupBy('p.id');
 
-    // ✅ ключевой фикс: используем ТОЛЬКО пути свойств alias.property
-    const a = itemsQb.alias; // 'p'
+    const a = itemsQb.alias;
     const sortMap: Record<string, string> = {
       title: `${a}.title`,
       shortDescription: `${a}.shortDescription`,
@@ -200,20 +198,16 @@ export class PostQueryRepository {
       createdAt: `${a}.createdAt`,
     };
 
-    // подстрахуемся от неожиданных sortBy
     const sortExpr = sortMap[sortBy] ?? `${a}.createdAt`;
     itemsQb.orderBy(sortExpr, dir);
 
-    // пагинация
     itemsQb.skip((pageNumber - 1) * pageSize).take(pageSize);
 
-    // получаем и сущности, и сырые колонки с json
     const { raw, entities } = await itemsQb.getRawAndEntities();
 
-    // приклеим likes/dislikes к сущностям
     const byId = new Map(entities.map((e) => [e.id, e as any]));
     for (const r of raw) {
-      const id = r['p_id']; // alias поля id из таблицы p.*
+      const id = r['p_id'];
       const ent = byId.get(id);
       if (ent) {
         ent.likes = r.likes ?? [];

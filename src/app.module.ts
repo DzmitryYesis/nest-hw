@@ -5,6 +5,7 @@ import { UtilitiesApplicationModule } from './features/service';
 import { UserIdMiddleware } from './core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BloggersPlatformModule } from './features/bloggers-platform';
+import { QuizModule } from './features/quiz/quiz.module';
 
 //TODO info DB put into env or config module
 @Module({
@@ -21,6 +22,7 @@ import { BloggersPlatformModule } from './features/bloggers-platform';
     }),
     UserAccountsModule,
     BloggersPlatformModule,
+    QuizModule,
     TestingModule,
     UtilitiesApplicationModule,
   ],
