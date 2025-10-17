@@ -178,7 +178,7 @@ describe('Questions controller (e2e)', () => {
       const { game } = await gameTestManager.createPendingGame();
 
       await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game.id}`)
         .set('authorization', `Basic bla-bla`)
         .expect(HttpStatus.UNAUTHORIZED);
     });
@@ -187,7 +187,7 @@ describe('Questions controller (e2e)', () => {
       const { user, accessToken } = await gameTestManager.createPendingGame();
 
       await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${user.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${user.id}`)
         .set('authorization', `Bearer ${accessToken}`)
         .expect(HttpStatus.NOT_FOUND);
     });
@@ -196,7 +196,7 @@ describe('Questions controller (e2e)', () => {
       const { accessToken } = await gameTestManager.createPendingGame();
 
       const response = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${invalidId}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${invalidId}`)
         .set('authorization', `Bearer ${accessToken}`)
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -220,7 +220,7 @@ describe('Questions controller (e2e)', () => {
       const { accessToken } = await gameTestManager.createPendingGame();
 
       const response = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${345}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${345}`)
         .set('authorization', `Bearer ${accessToken}`)
         .expect(HttpStatus.BAD_REQUEST);
 
@@ -259,7 +259,7 @@ describe('Questions controller (e2e)', () => {
       expect(game1.id).not.toEqual(game2.id);
 
       await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game1.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game1.id}`)
         .set('authorization', `Bearer ${accessToken}`)
         .expect(HttpStatus.FORBIDDEN);
     });
@@ -269,7 +269,7 @@ describe('Questions controller (e2e)', () => {
         await gameTestManager.createPendingGame();
 
       const response = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game.id}`)
         .set('authorization', `Bearer ${accessToken}`)
         .expect(HttpStatus.OK);
 
@@ -298,7 +298,7 @@ describe('Questions controller (e2e)', () => {
       const { user1, user2, game } = await gameTestManager.createActiveGame();
 
       const response = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game.id}`)
         .set('authorization', `Bearer ${user1.accessToken}`)
         .expect(HttpStatus.OK);
 
@@ -338,7 +338,7 @@ describe('Questions controller (e2e)', () => {
       );
 
       const response = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game.id}`)
         .set('authorization', `Bearer ${user1.accessToken}`)
         .expect(HttpStatus.OK);
 
@@ -925,7 +925,7 @@ describe('Questions controller (e2e)', () => {
         .expect(HttpStatus.OK);
 
       const responseGame = await request(app.getHttpServer())
-        .get(`/${GAME_API_PATH.ROOT_URL}/${game.id}`)
+        .get(`/${GAME_API_PATH.ROOT_URL}/pairs/${game.id}`)
         .set('authorization', `Bearer ${user1.accessToken}`)
         .expect(HttpStatus.OK);
 

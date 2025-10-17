@@ -41,8 +41,10 @@ export const DELETE_ALL_API_PATH = {
 export const QUESTION_API_PATH = `${SUPER_ADMIN}/${QUIZ}/questions`;
 
 export const GAME_API_PATH = {
-  ROOT_URL: 'pair-game-quiz/pairs',
-  CONNECTION: 'connection',
-  MY_CURRENT: 'my-current',
+  ROOT_URL: 'pair-game-quiz',
+  MY: 'pairs/my',
+  MY_STATISTIC: 'users/my-statistic',
+  CONNECTION: 'pairs/connection',
+  MY_CURRENT: 'pairs/my-current',
   ANSWERS: 'answers',
 };

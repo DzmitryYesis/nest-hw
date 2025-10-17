@@ -6,10 +6,11 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { BearerAuthGuard } from '../../../../core';
+import { BearerAuthGuard, PaginatedViewDto } from '../../../../core';
 import { GAME_API_PATH } from '../../../../constants';
 import { CommandBus } from '@nestjs/cqrs';
 import { CreateGameCommand } from '../application/use-cases/create-game.use-case';
@@ -20,6 +21,8 @@ import { AnswerViewDto } from '../dto/view-dto/answer-view.dto';
 import { AnswerInputDto } from '../dto/input-dto/answer.input-dto';
 import { AddAnswerCommand } from '../application/use-cases/add-answer.use-case';
 import { AnswerQueryRepository } from '../infrastructure/query/answer.query-repository';
+import { GamesQueryParams } from '../dto/input-dto/get-all-user-games.input-dto';
+import { UserStatisticViewDto } from '../dto/view-dto/user-statistic.view-dto';
 
 @UseGuards(BearerAuthGuard)
 @Controller(GAME_API_PATH.ROOT_URL)
@@ -30,6 +33,23 @@ export class GameController {
     private answerQueryRepository: AnswerQueryRepository,
   ) {}
 
+  @Get(GAME_API_PATH.MY)
+  async getAllUserGames(
+    @Req() req: Request & { userId: string },
+    @Query() query: GamesQueryParams,
+  ): Promise<PaginatedViewDto<GameViewDto[]>> {
+    const queryParams = new GamesQueryParams(query);
+
+    return this.gamesQueryRepository.findAllUserGames(req.userId, queryParams);
+  }
+
+  @Get(GAME_API_PATH.MY_STATISTIC)
+  async getUserStatisticGames(
+    @Req() req: Request & { userId: string },
+  ): Promise<UserStatisticViewDto> {
+    return this.gamesQueryRepository.getUserStatistic(req.userId);
+  }
+
   @Get(GAME_API_PATH.MY_CURRENT)
   async getUserActiveGame(
     @Req() req: Request & { userId: string },
@@ -37,7 +57,7 @@ export class GameController {
     return this.gamesQueryRepository.findActiveUserGame(req.userId);
   }
 
-  @Get(':id')
+  @Get('pairs/:id')
   async getGameById(
     @Req() req: Request & { userId: string },
     @Param('id') id: string,

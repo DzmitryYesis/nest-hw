@@ -31,6 +31,13 @@ export enum QuestionsSortByEnum {
   CREATED_AT = 'createdAt',
 }
 
+export enum GamesSortByEnum {
+  STATUS = 'status',
+  PAIR_CREATED_DATE = 'pairCreatedDate',
+  START_GAME_DATE = 'startGameDate',
+  FINISH_GAME_DATE = 'finishGameDate',
+}
+
 export enum SortDirectionEnum {
   ASC = 'asc',
   DESC = 'desc',
