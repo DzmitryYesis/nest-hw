@@ -42,6 +42,7 @@ export const QUESTION_API_PATH = `${SUPER_ADMIN}/${QUIZ}/questions`;
 
 export const GAME_API_PATH = {
   ROOT_URL: 'pair-game-quiz/pairs',
+  MY: 'my',
   CONNECTION: 'connection',
   MY_CURRENT: 'my-current',
   ANSWERS: 'answers',
