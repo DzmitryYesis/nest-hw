@@ -44,6 +44,7 @@ export const GAME_API_PATH = {
   ROOT_URL: 'pair-game-quiz',
   MY: 'pairs/my',
   MY_STATISTIC: 'users/my-statistic',
+  TOP: 'users/top',
   CONNECTION: 'pairs/connection',
   MY_CURRENT: 'pairs/my-current',
   ANSWERS: 'answers',

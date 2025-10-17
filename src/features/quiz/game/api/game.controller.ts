@@ -23,6 +23,8 @@ import { AddAnswerCommand } from '../application/use-cases/add-answer.use-case';
 import { AnswerQueryRepository } from '../infrastructure/query/answer.query-repository';
 import { GamesQueryParams } from '../dto/input-dto/get-all-user-games.input-dto';
 import { UserStatisticViewDto } from '../dto/view-dto/user-statistic.view-dto';
+import { Public } from '../../../../core/decorators';
+import { GamesTopQueryParams } from '../dto/input-dto/get-games-top.input-dto';
 
 @UseGuards(BearerAuthGuard)
 @Controller(GAME_API_PATH.ROOT_URL)
@@ -32,6 +34,14 @@ export class GameController {
     private gamesQueryRepository: GamesQueryRepository,
     private answerQueryRepository: AnswerQueryRepository,
   ) {}
+
+  @Public()
+  @Get(GAME_API_PATH.TOP)
+  async getGamesTop(@Query() query: GamesTopQueryParams): Promise<unknown> {
+    const queryParams = new GamesTopQueryParams(query);
+
+    return this.gamesQueryRepository.getGamesTop(queryParams);
+  }
 
   @Get(GAME_API_PATH.MY)
   async getAllUserGames(
