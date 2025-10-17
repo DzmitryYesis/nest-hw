@@ -1,3 +1,5 @@
+export const SUPER_ADMIN = 'sa';
+export const QUIZ = 'quiz';
 export const USERS_API_PATH = 'sa/users';
 export const BLOGS_API_PATH = 'blogs';
 export const BLOGS_SA_API_PATH = 'sa/blogs';
@@ -34,4 +36,13 @@ export const SECURITY_API_PATH = {
 export const DELETE_ALL_API_PATH = {
   ROOT_URL: 'testing',
   DELETE_ALL_DATA: 'all-data',
+};
+
+export const QUESTION_API_PATH = `${SUPER_ADMIN}/${QUIZ}/questions`;
+
+export const GAME_API_PATH = {
+  ROOT_URL: 'pair-game-quiz/pairs',
+  CONNECTION: 'connection',
+  MY_CURRENT: 'my-current',
+  ANSWERS: 'answers',
 };
