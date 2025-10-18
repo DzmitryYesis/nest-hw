@@ -32,6 +32,12 @@ export class Game {
   })
   status: GameStatusEnum;
 
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  graceDeadlineAt: Date | null;
+
+  @Column({ type: 'uuid', nullable: true, default: null })
+  fastestPlayerProgressId: string | null;
+
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
