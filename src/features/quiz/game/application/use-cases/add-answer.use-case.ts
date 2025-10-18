@@ -2,8 +2,9 @@ import { AnswerInputDto } from '../../dto/input-dto/answer.input-dto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { GamesRepository } from '../../infrastructure/game.repository';
 import { ForbiddenException } from '@nestjs/common';
-import { AnswerRepository } from '../../infrastructure/answer.repository';
 import { AnswerStatusEnum } from '../../../../../constants';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 export class AddAnswerCommand {
   constructor(
@@ -15,116 +16,79 @@ export class AddAnswerCommand {
 @CommandHandler(AddAnswerCommand)
 export class AddAnswerUseCase implements ICommandHandler<AddAnswerCommand> {
   constructor(
+    @InjectDataSource()
+    protected dataSource: DataSource,
     private gamesRepository: GamesRepository,
-    private answerRepository: AnswerRepository,
   ) {}
 
-  async execute(command: AddAnswerCommand): Promise<string> {
-    const { userId, data } = command;
-
-    const game = await this.gamesRepository.findUserActiveGame(userId);
-
-    if (!game) {
-      throw new ForbiddenException();
-    }
-
-    const answeringPlayerProgress = game.answeringPlayerProgress(userId);
-    const rivalPlayerProgress = game.rivalPlayerProgress(userId);
-
-    if (
-      !answeringPlayerProgress ||
-      answeringPlayerProgress.indexOfActiveQuestion >= 5
-    ) {
-      throw new ForbiddenException();
-    }
-
-    const answeringQuestion =
-      game.questions![answeringPlayerProgress.indexOfActiveQuestion];
-
-    const isCorrectAnswer = !!answeringQuestion.correctAnswers.find(
-      (answer) => answer === data.answer,
-    );
-
-    if (isCorrectAnswer) {
-      const score = answeringPlayerProgress.score + 1;
-
-      if (
-        answeringPlayerProgress.indexOfActiveQuestion === 4 &&
-        rivalPlayerProgress!.indexOfActiveQuestion === 5
-      ) {
-        if (rivalPlayerProgress!.score > 0) {
-          await this.gamesRepository.updatePlayerProgress(
-            rivalPlayerProgress!.id,
-            {
-              score: rivalPlayerProgress!.score + 1,
-              indexOfActiveQuestion: rivalPlayerProgress!.indexOfActiveQuestion,
-            },
-          );
-        }
-        await this.gamesRepository.updatePlayerProgress(
-          answeringPlayerProgress.id,
-          {
-            score,
-            indexOfActiveQuestion:
-              answeringPlayerProgress.indexOfActiveQuestion + 1,
-          },
-        );
-
-        await this.gamesRepository.finishGame(game.id);
-      } else {
-        await this.gamesRepository.updatePlayerProgress(
-          answeringPlayerProgress.id,
-          {
-            score,
-            indexOfActiveQuestion:
-              answeringPlayerProgress.indexOfActiveQuestion + 1,
-          },
-        );
-      }
-
-      return await this.answerRepository.createAnswer({
+  async execute({ userId, data }: AddAnswerCommand): Promise<string> {
+    return this.dataSource.transaction(async (m) => {
+      const game = await this.gamesRepository.findUserActiveGameForUpdate(
         userId,
-        gameId: game.id,
-        questionId: answeringQuestion.id,
-        answerStatus: AnswerStatusEnum.CORRECT,
-        playerProgress: answeringPlayerProgress,
-      });
-    } else {
-      const score = answeringPlayerProgress.score;
-
-      await this.gamesRepository.updatePlayerProgress(
-        answeringPlayerProgress.id,
-        {
-          score,
-          indexOfActiveQuestion:
-            answeringPlayerProgress.indexOfActiveQuestion + 1,
-        },
+        m,
       );
+      if (!game) throw new ForbiddenException();
 
-      if (
-        answeringPlayerProgress.indexOfActiveQuestion === 4 &&
-        rivalPlayerProgress!.indexOfActiveQuestion === 5
-      ) {
-        if (rivalPlayerProgress!.score > 0) {
-          await this.gamesRepository.updatePlayerProgress(
-            rivalPlayerProgress!.id,
-            {
-              score: rivalPlayerProgress!.score + 1,
-              indexOfActiveQuestion: rivalPlayerProgress!.indexOfActiveQuestion,
-            },
-          );
-        }
-
-        await this.gamesRepository.finishGame(game.id);
+      if (game.graceDeadlineAt && new Date() > game.graceDeadlineAt) {
+        await this.gamesRepository.reloadGameWithLockAndFinalizeIfNeeded(
+          game.id,
+          m,
+        );
+        throw new ForbiddenException('Time is over');
       }
 
-      return await this.answerRepository.createAnswer({
+      const me = game.answeringPlayerProgress(userId);
+      const rival = game.rivalPlayerProgress(userId);
+      if (!me || !rival || me.indexOfActiveQuestion >= 5) {
+        throw new ForbiddenException();
+      }
+
+      const question = game.questions![me.indexOfActiveQuestion];
+      const isCorrect = question.correctAnswers.includes(data.answer);
+
+      const answerId = await this.gamesRepository.createAnswerTx(m, {
         userId,
         gameId: game.id,
-        questionId: answeringQuestion.id,
-        answerStatus: AnswerStatusEnum.INCORRECT,
-        playerProgress: answeringPlayerProgress,
+        questionId: question.id,
+        answerStatus: isCorrect
+          ? AnswerStatusEnum.CORRECT
+          : AnswerStatusEnum.INCORRECT,
+        playerProgress: me,
       });
-    }
+
+      const newScore = isCorrect ? me.score + 1 : me.score;
+      await this.gamesRepository.updatePlayerProgressTx(m, me.id, {
+        score: newScore,
+        indexOfActiveQuestion: me.indexOfActiveQuestion + 1,
+      });
+      me.score = newScore;
+      me.indexOfActiveQuestion += 1;
+
+      if (me.indexOfActiveQuestion === 5 && rival.indexOfActiveQuestion === 5) {
+        if (rival.score > 0) {
+          await this.gamesRepository.updatePlayerProgressTx(m, rival.id, {
+            score: rival.score + 1,
+            indexOfActiveQuestion: rival.indexOfActiveQuestion,
+          });
+        }
+        await this.gamesRepository.finishGameTx(m, game.id);
+        return answerId;
+      }
+
+      if (me.indexOfActiveQuestion === 5 && rival.indexOfActiveQuestion < 5) {
+        if (!game.graceDeadlineAt) {
+          await this.gamesRepository.setGraceDeadlineTx(
+            game.id,
+            new Date(Date.now() + 10_000),
+            m,
+          );
+
+          await this.gamesRepository.markFastestTx(game.id, me.id, m);
+        }
+        return answerId;
+      }
+
+      return answerId;
+    });
   }
 }

@@ -9,7 +9,7 @@ import { GAME_API_PATH, GameStatusEnum } from '../src/constants';
 import { GameViewDto } from '../src/features/quiz/game/dto/view-dto/game.view-dto';
 import { GameTestManager } from './helpers/test-managers/game-test-manager';
 
-describe('Questions controller (e2e)', () => {
+describe('Games controller (e2e)', () => {
   let app: INestApplication;
   let questionTestManager: QuestionTestManager;
   let userTestManager: UserTestManager;

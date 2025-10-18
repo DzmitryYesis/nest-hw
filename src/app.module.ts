@@ -4,6 +4,7 @@ import { UserAccountsModule } from './features/user-accounts';
 import { UtilitiesApplicationModule } from './features/service';
 import { UserIdMiddleware } from './core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { BloggersPlatformModule } from './features/bloggers-platform';
 import { QuizModule } from './features/quiz/quiz.module';
 
@@ -20,6 +21,7 @@ import { QuizModule } from './features/quiz/quiz.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    ScheduleModule.forRoot(),
     UserAccountsModule,
     BloggersPlatformModule,
     QuizModule,

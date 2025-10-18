@@ -21,6 +21,7 @@ import { GetGameByIdUseCase } from './game/application/use-cases/get-game-by-id.
 import { AddAnswerUseCase } from './game/application/use-cases/add-answer.use-case';
 import { AnswerRepository } from './game/infrastructure/answer.repository';
 import { AnswerQueryRepository } from './game/infrastructure/query/answer.query-repository';
+import { GamesScheduler } from './game/application/games.schedule';
 
 const useCases = [
   CreateQuestionUseCase,
@@ -46,6 +47,7 @@ const useCases = [
     GamesQueryRepository,
     AnswerRepository,
     AnswerQueryRepository,
+    GamesScheduler,
     ...useCases,
   ],
 })
